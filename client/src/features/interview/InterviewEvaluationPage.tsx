@@ -26,6 +26,7 @@ import {
   type InterviewEvaluation,
 } from "./types";
 import { ContentContainer, PageHeader } from "../../components/layout";
+import { useToast } from "../../context/ToastContext";
 import {
   Badge,
   Button,
@@ -35,17 +36,18 @@ import {
   FeedbackCard,
   InterviewQuestionCard,
   ProgressBar,
+  RadarCompetencyChart,
   ScoreRing,
   SectionCard,
   Skeleton,
   SkillBadge,
-  Toast,
 } from "../../components/ui";
 
 export const InterviewEvaluationPage: React.FC = () => {
   const { interviewId } = useParams<{ interviewId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const [interview, setInterview] = useState<Interview | null>(null);
   const [evaluation, setEvaluation] = useState<InterviewEvaluation | null>(
@@ -53,7 +55,6 @@ export const InterviewEvaluationPage: React.FC = () => {
   );
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const loadEvaluation = async () => {
     if (!interviewId) {
@@ -367,9 +368,15 @@ export const InterviewEvaluationPage: React.FC = () => {
   const handleCopyReport = async () => {
     try {
       await navigator.clipboard.writeText(buildMarkdownReport());
-      setToastMessage("Evaluation report copied to clipboard.");
+      toast.success(
+        "Evaluation report copied",
+        "Markdown evaluation report copied to clipboard.",
+      );
     } catch {
-      setToastMessage("Unable to copy report to clipboard.");
+      toast.error(
+        "Copy failed",
+        "Unable to copy evaluation report to clipboard.",
+      );
     }
   };
 
@@ -388,7 +395,10 @@ export const InterviewEvaluationPage: React.FC = () => {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setToastMessage("Downloaded Markdown evaluation report.");
+    toast.success(
+      "Report exported",
+      "Downloaded Markdown evaluation report.",
+    );
   };
 
   return (
@@ -459,15 +469,6 @@ export const InterviewEvaluationPage: React.FC = () => {
           </div>
         }
       />
-
-      {toastMessage && (
-        <Toast
-          tone="success"
-          title="Evaluation report"
-          description={toastMessage}
-          onDismiss={() => setToastMessage(null)}
-        />
-      )}
 
       {error && (
         <ErrorState
@@ -554,22 +555,34 @@ export const InterviewEvaluationPage: React.FC = () => {
             title="Score Breakdown"
             description="Performance across the six core engineering interview dimensions."
           >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {scoreBreakdown.map((dim) => (
-                <Card key={dim.label} muted padding="sm">
-                  <ProgressBar
-                    label={dim.label}
-                    value={dim.value}
-                    tone={
-                      dim.value >= 75
-                        ? "success"
-                        : dim.value >= 55
-                          ? "primary"
-                          : "warning"
-                    }
-                  />
-                </Card>
-              ))}
+            <div className="grid gap-6 lg:grid-cols-12 lg:items-center">
+              <div className="lg:col-span-4">
+                <RadarCompetencyChart
+                  data={scoreBreakdown.map((dim) => ({
+                    label: dim.label,
+                    value: dim.value,
+                  }))}
+                  size={256}
+                  title="Rubric Profile"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:col-span-8">
+                {scoreBreakdown.map((dim) => (
+                  <Card key={dim.label} muted padding="sm">
+                    <ProgressBar
+                      label={dim.label}
+                      value={dim.value}
+                      tone={
+                        dim.value >= 75
+                          ? "success"
+                          : dim.value >= 55
+                            ? "primary"
+                            : "warning"
+                      }
+                    />
+                  </Card>
+                ))}
+              </div>
             </div>
           </SectionCard>
 

@@ -8,7 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { MotionConfig } from "framer-motion";
+import { AnimatePresence, MotionConfig } from "framer-motion";
 import {
   AuthProvider,
   useAuth,
@@ -20,8 +20,14 @@ import {
   OnboardingWizard,
 } from "./features/auth";
 import { ThemeProvider } from "./context/ThemeContext";
+import { ToastProvider } from "./context/ToastContext";
 import { AppShell } from "./components/layout";
-import { Button, Card, PageTransition } from "./components/ui";
+import {
+  Button,
+  Card,
+  PageTransition,
+  SmoothScrollProvider,
+} from "./components/ui";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const LandingPage = lazy(() =>
@@ -162,17 +168,14 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <WorkspaceRoute>{children}</WorkspaceRoute>;
 };
 
-export const App: React.FC = () => {
+const AnimatedAppRoutes: React.FC = () => {
+  const location = useLocation();
   return (
-    <ErrorBoundary>
-      <MotionConfig reducedMotion="user">
-        <ThemeProvider>
-          <AuthProvider>
-            <Router>
-              <Suspense fallback={<RouteLoadingFallback />}>
-            <Routes>
-              <Route
-                path="/admin"
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <AnimatePresence mode="wait" initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route
+            path="/admin"
                 element={
                   <AdminRoute>
                     <AdminDashboardPage />
@@ -351,12 +354,28 @@ export const App: React.FC = () => {
                 }
               />
 
-              {/* 404 Fallback */}
-              <Route path="*" element={<NotFound />} />
-              </Routes>
-              </Suspense>
-            </Router>
-          </AuthProvider>
+          {/* 404 Fallback */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AnimatePresence>
+    </Suspense>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <MotionConfig reducedMotion="user">
+        <ThemeProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <Router>
+                <SmoothScrollProvider>
+                  <AnimatedAppRoutes />
+                </SmoothScrollProvider>
+              </Router>
+            </AuthProvider>
+          </ToastProvider>
         </ThemeProvider>
       </MotionConfig>
     </ErrorBoundary>

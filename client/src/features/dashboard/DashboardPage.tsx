@@ -26,10 +26,12 @@ import {
   Badge,
   Button,
   Card,
+  DonutDistributionChart,
   ErrorState,
   JobCard,
   RequirementRow,
   SectionCard,
+  SegmentedBarChart,
   Skeleton,
 } from "../../components/ui";
 
@@ -274,6 +276,56 @@ export const DashboardPage: React.FC = () => {
   }, [latestResume, readiness, applications]);
 
   const metricsLoading = resumesLoading || appsLoading || readinessLoading;
+
+  const pipelineFunnelData = useMemo(() => {
+    const counts = {
+      SAVED: 0,
+      APPLIED: 0,
+      INTERVIEWING: 0,
+      OFFER: 0,
+    };
+    for (const app of applications ?? []) {
+      if (app.status in counts) {
+        counts[app.status as keyof typeof counts] += 1;
+      }
+    }
+    return [
+      { label: "Saved", value: counts.SAVED, tone: "neutral" as const },
+      { label: "Applied", value: counts.APPLIED, tone: "primary" as const },
+      {
+        label: "Interviewing",
+        value: counts.INTERVIEWING,
+        tone: "warning" as const,
+      },
+      { label: "Offer", value: counts.OFFER, tone: "success" as const },
+    ];
+  }, [applications]);
+
+  const skillEvidenceDonut = useMemo(
+    () => [
+      {
+        label: "Verified strengths",
+        value: skillProfileBuckets.verifiedStrengths.length,
+        tone: "success" as const,
+      },
+      {
+        label: "Resume-only claims",
+        value: skillProfileBuckets.resumeOnlyClaims.length,
+        tone: "primary" as const,
+      },
+      {
+        label: "Needs practice",
+        value: skillProfileBuckets.interviewWeaknesses.length,
+        tone: "warning" as const,
+      },
+      {
+        label: "Target role gaps",
+        value: prioritySkillGaps.length,
+        tone: "danger" as const,
+      },
+    ],
+    [skillProfileBuckets, prioritySkillGaps.length],
+  );
 
   const metricCards = [
     {
@@ -705,6 +757,47 @@ export const DashboardPage: React.FC = () => {
           </Card>
         ))}
       </section>
+
+      {/* 3B. Visual Readiness Distribution & Pipeline Funnel */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-6">
+          <SectionCard
+            eyebrow="Skill Verification Breakdown"
+            title="Evidence Composition"
+            description="Balance between interview-verified strengths, unvalidated resume claims, and priority gaps."
+            loading={metricsLoading}
+          >
+            <DonutDistributionChart
+              data={skillEvidenceDonut}
+              centerValue={`${metrics.readinessScore}%`}
+              centerLabel="Readiness"
+            />
+          </SectionCard>
+        </div>
+
+        <div className="lg:col-span-6">
+          <SectionCard
+            eyebrow="Pipeline Velocity"
+            title="Application Funnel"
+            description="Distribution of your tracked engineering roles across hiring stages."
+            loading={appsLoading}
+            action={
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/applications")}
+              >
+                Open tracker
+              </Button>
+            }
+          >
+            <SegmentedBarChart
+              items={pipelineFunnelData}
+              valueSuffix=" roles"
+            />
+          </SectionCard>
+        </div>
+      </div>
 
       {/* 4. Priority Skill Gaps & Recommended Jobs */}
       <div className="grid gap-6 lg:grid-cols-12">

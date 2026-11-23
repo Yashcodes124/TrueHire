@@ -29,6 +29,7 @@ import type { Job, SyncHealth } from "./types";
 import { createApplication } from "../tracker/trackerApi";
 import { useLatestResumeId } from "../resume/useResumes";
 import { useAuth } from "../auth/useAuth";
+import { useToast } from "../../context/ToastContext";
 import { apiClient } from "../../lib/api-client";
 import {
   getSafeExternalUrl,
@@ -40,6 +41,7 @@ const JOBS_PER_PAGE = 12;
 export const JobsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [activeDrawerJob, setActiveDrawerJob] = useState<Job | null>(null);
   const [drawerTab, setDrawerTab] = useState<"OVERVIEW" | "DESCRIPTION">(
@@ -116,11 +118,16 @@ export const JobsPage: React.FC = () => {
       setSyncBanner(
         `Sync complete: ${syncRes.totalSaved} roles added/updated, ${syncRes.totalDeactivated} stale listings deactivated.`,
       );
+      toast.success(
+        "Verified jobs synced",
+        `${syncRes.totalSaved} roles updated · ${syncRes.totalDeactivated} stale removed.`,
+      );
       setTimeout(() => setSyncBanner(null), 6000);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to sync verified jobs.",
-      );
+      const msg =
+        err instanceof Error ? err.message : "Failed to sync verified jobs.";
+      setError(msg);
+      toast.error("Sync failed", msg);
     } finally {
       setIsSyncing(false);
     }
@@ -151,17 +158,23 @@ export const JobsPage: React.FC = () => {
         description: "",
       });
 
+      toast.success(
+        "Job imported",
+        `${created.title} at ${created.company} added to your discovery feed.`,
+      );
+
       if (resumeId) {
         navigate(`/matches/${created.id}?resumeId=${resumeId}`);
       } else {
         setActiveDrawerJob(created);
       }
     } catch (err: any) {
-      setImportError(
+      const msg =
         err?.response?.data?.message ||
-          err?.message ||
-          "Could not import job. Check all fields.",
-      );
+        err?.message ||
+        "Could not import job. Check all fields.";
+      setImportError(msg);
+      toast.error("Import failed", msg);
     } finally {
       setIsImporting(false);
     }
@@ -346,6 +359,7 @@ export const JobsPage: React.FC = () => {
           next.delete(job.id);
           return next;
         });
+        toast.info("Removed from saved jobs", `${job.title} at ${job.company}`);
       } else {
         await saveJob(job.id);
         setSavedJobIds((current) => {
@@ -353,9 +367,11 @@ export const JobsPage: React.FC = () => {
           next.add(job.id);
           return next;
         });
+        toast.success("Job saved", `${job.title} at ${job.company}`);
       }
     } catch (err) {
       console.error("Failed to update saved job:", err);
+      toast.error("Action failed", "Could not update saved job status.");
     } finally {
       setIsSaving(false);
     }
@@ -366,9 +382,14 @@ export const JobsPage: React.FC = () => {
     try {
       setIsTracking(true);
       await createApplication(job.id);
+      toast.success(
+        "Added to tracker",
+        `Now tracking ${job.title} at ${job.company}.`,
+      );
       navigate("/applications");
     } catch (err) {
       console.error("Failed to track application:", err);
+      toast.error("Tracking failed", "Could not add this role to your tracker.");
     } finally {
       setIsTracking(false);
     }

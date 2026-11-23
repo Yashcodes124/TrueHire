@@ -2,6 +2,7 @@ import React from "react";
 import { Moon, Palette } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 import { THEME_REGISTRY, type AppTheme } from "../../lib/theme";
 
 export interface ThemeToggleProps {
@@ -18,9 +19,21 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   variant = "compact",
   className = "",
 }) => {
-  const { theme, setTheme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const toast = useToast();
   const currentMeta = THEME_REGISTRY[theme];
-  const nextMeta = THEME_REGISTRY[theme === "dark" ? "swiss" : "dark"];
+  const nextTheme: AppTheme = theme === "dark" ? "swiss" : "dark";
+  const nextMeta = THEME_REGISTRY[nextTheme];
+
+  const handleSelectTheme = (target: AppTheme) => {
+    if (target === theme) return;
+    setTheme(target);
+    const meta = THEME_REGISTRY[target];
+    toast.info(`Switched to ${meta.name}`, meta.description, {
+      id: "theme-switch",
+      durationMs: 2400,
+    });
+  };
 
   if (variant === "segmented") {
     return (
@@ -37,7 +50,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             <button
               key={opt.id}
               type="button"
-              onClick={() => setTheme(opt.id)}
+              onClick={() => handleSelectTheme(opt.id)}
               aria-pressed={active}
               title={THEME_REGISTRY[opt.id].description}
               className={`relative inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
@@ -81,7 +94,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   return (
     <button
       type="button"
-      onClick={toggleTheme}
+      onClick={() => handleSelectTheme(nextTheme)}
       aria-label={`Switch theme to ${nextMeta.name}`}
       title={`Current: ${currentMeta.name}. Click for ${nextMeta.name}`}
       className={`inline-flex h-8 items-center gap-2 rounded-sm border border-border bg-surface px-2.5 text-xs font-medium text-content-body whitespace-nowrap transition-all duration-150 hover:border-border-strong hover:bg-muted hover:text-content-heading active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}

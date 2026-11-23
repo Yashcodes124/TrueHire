@@ -16,6 +16,7 @@ import { useResumes } from "../resume/useResumes";
 import { useApplications } from "../tracker/useApplications";
 import type { Application } from "../tracker/types";
 import { ContentContainer, PageHeader } from "../../components/layout";
+import { useToast } from "../../context/ToastContext";
 import {
   Badge,
   Button,
@@ -24,6 +25,7 @@ import {
   ErrorState,
   Input,
   ProgressBar,
+  RadarCompetencyChart,
   ScoreRing,
   SectionCard,
   Skeleton,
@@ -136,6 +138,7 @@ const writeStoredSet = (key: string, values: Set<string>): void => {
 export const ReadinessPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const isSkillsRoute = location.pathname === "/skills";
 
   const {
@@ -171,6 +174,7 @@ export const ReadinessPage: React.FC = () => {
       setDismissedSkills(nextDismissed);
       writeStoredSet(DISMISSED_SKILLS_KEY, nextDismissed);
     }
+    toast.success("Skill confirmed", `${skill} marked as confirmed on your resume.`);
   };
 
   const handleDismissSkill = (skill: string) => {
@@ -179,12 +183,19 @@ export const ReadinessPage: React.FC = () => {
     nextDismissed.add(key);
     setDismissedSkills(nextDismissed);
     writeStoredSet(DISMISSED_SKILLS_KEY, nextDismissed);
+    toast.info("Skill removed", `${skill} hidden from your active skill ledger.`, {
+      action: {
+        label: "Restore all",
+        onClick: handleRestoreDismissed,
+      },
+    });
   };
 
   const handleRestoreDismissed = () => {
     const empty = new Set<string>();
     setDismissedSkills(empty);
     writeStoredSet(DISMISSED_SKILLS_KEY, empty);
+    toast.success("Skills restored", "Removed resume skills have been restored.");
   };
 
   const unifiedSkills = useMemo<UnifiedSkillEntry[]>(() => {
@@ -825,22 +836,34 @@ export const ReadinessPage: React.FC = () => {
           title="Readiness by Technical Area"
           description="Domain coverage across your verified interview skills and extracted resume profile."
         >
-          <div className="space-y-4">
-            {areaReadiness.map((item) => (
-              <div key={item.area} className="space-y-1.5">
-                <ProgressBar
-                  label={`${item.area} (${item.verifiedCount} verified / ${item.totalTracked} tracked)`}
-                  value={item.pct}
-                  tone={
-                    item.pct >= 70
-                      ? "success"
-                      : item.pct >= 40
-                        ? "primary"
-                        : "warning"
-                  }
-                />
-              </div>
-            ))}
+          <div className="grid gap-6 md:grid-cols-12 md:items-center">
+            <div className="md:col-span-5">
+              <RadarCompetencyChart
+                data={areaReadiness.map((item) => ({
+                  label: item.area,
+                  value: item.pct,
+                }))}
+                size={232}
+                title="Domain Radar"
+              />
+            </div>
+            <div className="space-y-4 md:col-span-7">
+              {areaReadiness.map((item) => (
+                <div key={item.area} className="space-y-1.5">
+                  <ProgressBar
+                    label={`${item.area} (${item.verifiedCount} verified / ${item.totalTracked} tracked)`}
+                    value={item.pct}
+                    tone={
+                      item.pct >= 70
+                        ? "success"
+                        : item.pct >= 40
+                          ? "primary"
+                          : "warning"
+                    }
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </SectionCard>
 

@@ -11,24 +11,27 @@ import {
 } from "lucide-react";
 import { apiClient } from "../../lib/api-client";
 import { ContentContainer, PageHeader } from "../../components/layout";
+import { useToast } from "../../context/ToastContext";
 import {
   Badge,
   Button,
   Card,
+  DonutDistributionChart,
   EmptyState,
   ErrorState,
   Input,
   Modal,
   SectionCard,
+  SegmentedBarChart,
   Select,
   Skeleton,
   Tabs,
-  Toast,
 } from "../../components/ui";
 
 type AdminTab = "system" | "sync" | "ai" | "resume" | "matching" | "closedLoop";
 
 export const AdminDashboardPage: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<AdminTab>("system");
   const [rangeDays, setRangeDays] = useState<string>("7");
 
@@ -41,7 +44,6 @@ export const AdminDashboardPage: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const [syncConfirmOpen, setSyncConfirmOpen] = useState(false);
   const [isSyncRunning, setIsSyncRunning] = useState(false);
@@ -99,12 +101,16 @@ export const AdminDashboardPage: React.FC = () => {
       setIsSyncRunning(true);
       await apiClient.post("/admin/job-syncs/run");
       setSyncConfirmOpen(false);
-      setToastMsg("Manual multi-ATS job sync completed.");
+      toast.success(
+        "ATS job sync completed",
+        "Manual multi-ATS job sync finished and metrics refreshed.",
+      );
       await loadAllAdminMetrics();
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Failed to run manual job sync.",
-      );
+      const msg =
+        err instanceof Error ? err.message : "Failed to run manual job sync.";
+      setError(msg);
+      toast.error("Job sync failed", msg);
     } finally {
       setIsSyncRunning(false);
     }
@@ -121,12 +127,16 @@ export const AdminDashboardPage: React.FC = () => {
         action,
         targetCanonical,
       });
-      setToastMsg(`Updated ontology review item "${token}".`);
+      toast.success(
+        "Ontology queue updated",
+        `Resolved review item "${token}".`,
+      );
       await loadAllAdminMetrics();
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Could not resolve review item.",
-      );
+      const msg =
+        err instanceof Error ? err.message : "Could not resolve review item.";
+      setError(msg);
+      toast.error("Ontology action failed", msg);
     }
   };
 
@@ -159,15 +169,6 @@ export const AdminDashboardPage: React.FC = () => {
           />
         }
       />
-
-      {toastMsg && (
-        <Toast
-          tone="success"
-          title="Admin action completed"
-          description={toastMsg}
-          onDismiss={() => setToastMsg(null)}
-        />
-      )}
 
       {error && (
         <ErrorState
@@ -337,27 +338,25 @@ export const AdminDashboardPage: React.FC = () => {
                   </Card>
                 </div>
 
-                {/* Per-ATS Active Inventory */}
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {(jobSyncs.bySource ?? []).map((src: any) => (
-                    <Card key={src.source} padding="sm" className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Badge tone="primary" size="sm">
-                          {src.source}
-                        </Badge>
-                        <span className="text-sm font-semibold tabular-nums">
-                          {src.activeJobsCount} active
-                        </span>
-                      </div>
-                      <p className="text-xs text-content-secondary">
-                        Last synced:{" "}
-                        {src.lastSyncedAt
-                          ? new Date(src.lastSyncedAt).toLocaleString()
-                          : "Never"}
-                      </p>
-                    </Card>
-                  ))}
-                </div>
+                {/* Per-ATS Active Inventory Visual Bar Chart */}
+                {(jobSyncs.bySource ?? []).length > 0 && (
+                  <Card padding="sm" className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-content-secondary">
+                      Active Jobs by ATS Source
+                    </p>
+                    <SegmentedBarChart
+                      items={(jobSyncs.bySource ?? []).map((src: any) => ({
+                        label: src.source,
+                        value: src.activeJobsCount ?? 0,
+                        tone: "primary" as const,
+                        sublabel: src.lastSyncedAt
+                          ? `Synced ${new Date(src.lastSyncedAt).toLocaleDateString()}`
+                          : "Never synced",
+                      }))}
+                      valueSuffix=" jobs"
+                    />
+                  </Card>
+                )}
 
                 {/* Recent Sync Audit Log */}
                 {jobSyncs.logs.length === 0 ? (
@@ -483,6 +482,34 @@ export const AdminDashboardPage: React.FC = () => {
                     </p>
                   </Card>
                 </div>
+
+                {/* AI Request Outcome Distribution */}
+                <Card padding="sm" className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-content-secondary">
+                    Gateway Request Outcomes
+                  </p>
+                  <DonutDistributionChart
+                    data={[
+                      {
+                        label: "Successful",
+                        value: aiReliability.summary.successCount ?? 0,
+                        tone: "success",
+                      },
+                      {
+                        label: "Fallback",
+                        value: aiReliability.summary.fallbackCount ?? 0,
+                        tone: "warning",
+                      },
+                      {
+                        label: "Failures",
+                        value: aiReliability.summary.failureCount ?? 0,
+                        tone: "danger",
+                      },
+                    ]}
+                    centerValue={aiReliability.summary.totalRequests ?? 0}
+                    centerLabel="Requests"
+                  />
+                </Card>
 
                 {/* By Feature Breakdown */}
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

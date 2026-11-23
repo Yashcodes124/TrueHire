@@ -17,23 +17,45 @@ import {
 import { useAuth } from "../auth/useAuth";
 import { ContentContainer } from "../../components/layout";
 import {
+  AmbientBackdrop,
+  AreaTrendChart,
   Badge,
   Button,
   Card,
   EDITORIAL_EASE,
   FeedbackCard,
+  ParallaxLayer,
   ProgressBar,
+  RadarCompetencyChart,
   RequirementRow,
   ScoreRing,
   ScrollProgressBar,
   ScrollReveal,
   Skeleton,
   SkillBadge,
+  SpotlightCard,
   StaggerGroup,
   StaggerItem,
   Tabs,
   ThemeToggle,
 } from "../../components/ui";
+
+const PREVIEW_EVAL_RADAR = [
+  { label: "Accuracy", value: 86 },
+  { label: "Clarity", value: 82 },
+  { label: "Trade-offs", value: 88 },
+  { label: "Depth", value: 78 },
+  { label: "Structure", value: 85 },
+  { label: "Role Fit", value: 84 },
+];
+
+const PREVIEW_READINESS_TREND = [
+  { label: "S1", value: 54, note: "Baseline resume" },
+  { label: "S2", value: 61, note: "SQL mock" },
+  { label: "S3", value: 68, note: "Node.js APIs" },
+  { label: "S4", value: 74, note: "System trade-offs" },
+  { label: "S5", value: 80, note: "API Auth verified" },
+];
 
 const WORKFLOW_STEPS = [
   {
@@ -240,10 +262,7 @@ export const LandingPage: React.FC = () => {
       <main>
         {/* Hero Section — Immediate First-Paint Visibility + Subtle Editorial Motion */}
         <section className="relative overflow-hidden border-b border-border bg-canvas py-12 sm:py-16 lg:py-20 theme-surface-transition">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-architectural-grid opacity-45 [mask-image:radial-gradient(ellipse_75%_65%_at_50%_15%,#000_25%,transparent_100%)]"
-          />
+          <AmbientBackdrop variant="hero" />
 
           <ContentContainer
             size="xl"
@@ -328,10 +347,11 @@ export const LandingPage: React.FC = () => {
                 transition={{ duration: 0.4, delay: 0.06, ease: EDITORIAL_EASE }}
                 className="lg:col-span-7"
               >
-                <Card
-                  padding="none"
-                  className="overflow-hidden border-border-strong/70 shadow-elevated"
-                >
+                <ParallaxLayer offset={10}>
+                  <Card
+                    padding="none"
+                    className="overflow-hidden border-border-strong/70 shadow-elevated"
+                  >
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/70 px-4 py-3 sm:px-6">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-display text-xs font-semibold text-content-heading">
@@ -437,18 +457,29 @@ export const LandingPage: React.FC = () => {
                           id: "interview",
                           label: "3. Evaluation",
                           content: (
-                            <FeedbackCard
-                              title="Question 2 Evaluation · API Authentication"
-                              score={84}
-                              summary="Clear explanation of short-lived access tokens paired with rotating refresh tokens and revocation lists."
-                              strengths={[
-                                "Explained token rotation and replay detection clearly.",
-                                "Addressed stateless vs. stateful revocation trade-offs.",
-                              ]}
-                              improvements={[
-                                "Specify cookie security flags (HttpOnly, SameSite, Secure) when storing refresh tokens.",
-                              ]}
-                            />
+                            <div className="grid gap-4 md:grid-cols-12 md:items-center">
+                              <div className="md:col-span-5">
+                                <RadarCompetencyChart
+                                  data={PREVIEW_EVAL_RADAR}
+                                  size={224}
+                                  title="Rubric"
+                                />
+                              </div>
+                              <div className="md:col-span-7">
+                                <FeedbackCard
+                                  title="Question 2 Evaluation · API Authentication"
+                                  score={84}
+                                  summary="Clear explanation of short-lived access tokens paired with rotating refresh tokens and revocation lists."
+                                  strengths={[
+                                    "Explained token rotation and replay detection clearly.",
+                                    "Addressed stateless vs. stateful revocation trade-offs.",
+                                  ]}
+                                  improvements={[
+                                    "Specify cookie security flags (HttpOnly, SameSite, Secure) when storing refresh tokens.",
+                                  ]}
+                                />
+                              </div>
+                            </div>
                           ),
                         },
                         {
@@ -472,7 +503,15 @@ export const LandingPage: React.FC = () => {
                                 </div>
                               </Card>
 
-                              <div className="space-y-3">
+                              <Card padding="sm" className="bg-canvas/50">
+                                <AreaTrendChart
+                                  data={PREVIEW_READINESS_TREND}
+                                  height={132}
+                                  title="Readiness progression"
+                                />
+                              </Card>
+
+                              <div className="space-y-2.5">
                                 <ProgressBar
                                   label="Backend APIs & Auth"
                                   value={84}
@@ -483,14 +522,9 @@ export const LandingPage: React.FC = () => {
                                   value={78}
                                   tone="primary"
                                 />
-                                <ProgressBar
-                                  label="Distributed Caching"
-                                  value={52}
-                                  tone="warning"
-                                />
                               </div>
 
-                              <div className="flex flex-wrap gap-2 pt-1">
+                              <div className="flex flex-wrap gap-2 pt-0.5">
                                 <SkillBadge
                                   skill="PostgreSQL"
                                   level="VERIFIED"
@@ -515,6 +549,7 @@ export const LandingPage: React.FC = () => {
                     />
                   </div>
                 </Card>
+                </ParallaxLayer>
               </motion.div>
             </div>
           </ContentContainer>
@@ -523,14 +558,14 @@ export const LandingPage: React.FC = () => {
         {/* Closed-Loop Workflow Strip */}
         <section
           id="closed-loop"
-          className="border-b border-border bg-surface py-14 sm:py-20 theme-surface-transition"
+          className="overflow-x-clip border-b border-border bg-surface py-14 sm:py-20 theme-surface-transition"
         >
           <ContentContainer
             size="xl"
             padded={false}
             className="px-4 sm:px-6 lg:px-8"
           >
-            <ScrollReveal className="max-w-2xl space-y-2.5">
+            <ScrollReveal direction="left" className="max-w-2xl space-y-2.5">
               <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">
                 Closed-Loop System
               </p>
@@ -546,10 +581,9 @@ export const LandingPage: React.FC = () => {
 
             <StaggerGroup className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
               {CLOSED_LOOP_NODES.map((node) => (
-                <StaggerItem key={node.stage} className="h-full">
-                  <Card
+                <StaggerItem key={node.stage} direction="up" className="h-full">
+                  <SpotlightCard
                     padding="sm"
-                    interactive
                     className="flex h-full flex-col justify-between"
                   >
                     <div>
@@ -563,7 +597,7 @@ export const LandingPage: React.FC = () => {
                         {node.summary}
                       </p>
                     </div>
-                  </Card>
+                  </SpotlightCard>
                 </StaggerItem>
               ))}
             </StaggerGroup>
@@ -573,14 +607,14 @@ export const LandingPage: React.FC = () => {
         {/* How It Works (4 Concrete Steps) */}
         <section
           id="how-it-works"
-          className="border-b border-border bg-canvas py-14 sm:py-20 theme-surface-transition"
+          className="overflow-x-clip border-b border-border bg-canvas py-14 sm:py-20 theme-surface-transition"
         >
           <ContentContainer
             size="xl"
             padded={false}
             className="px-4 sm:px-6 lg:px-8"
           >
-            <ScrollReveal className="max-w-2xl space-y-2.5">
+            <ScrollReveal direction="right" className="max-w-2xl space-y-2.5">
               <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">
                 How It Works
               </p>
@@ -590,9 +624,13 @@ export const LandingPage: React.FC = () => {
             </ScrollReveal>
 
             <StaggerGroup className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {WORKFLOW_STEPS.map((item) => (
-                <StaggerItem key={item.step} className="h-full">
-                  <Card padding="md" interactive className="h-full">
+              {WORKFLOW_STEPS.map((item, idx) => (
+                <StaggerItem
+                  key={item.step}
+                  direction={idx % 2 === 0 ? "up" : "scale"}
+                  className="h-full"
+                >
+                  <SpotlightCard padding="md" className="h-full">
                     <span className="inline-flex items-center font-mono text-xs font-semibold text-primary tabular-nums">
                       STEP {item.step}
                     </span>
@@ -602,7 +640,7 @@ export const LandingPage: React.FC = () => {
                     <p className="mt-2 text-sm leading-relaxed text-content-secondary">
                       {item.description}
                     </p>
-                  </Card>
+                  </SpotlightCard>
                 </StaggerItem>
               ))}
             </StaggerGroup>
@@ -612,14 +650,14 @@ export const LandingPage: React.FC = () => {
         {/* Core Product Capabilities */}
         <section
           id="features"
-          className="border-b border-border bg-surface py-14 sm:py-20 theme-surface-transition"
+          className="overflow-x-clip border-b border-border bg-surface py-14 sm:py-20 theme-surface-transition"
         >
           <ContentContainer
             size="xl"
             padded={false}
             className="px-4 sm:px-6 lg:px-8"
           >
-            <ScrollReveal className="max-w-2xl space-y-2.5">
+            <ScrollReveal direction="left" className="max-w-2xl space-y-2.5">
               <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">
                 Core Capabilities
               </p>
@@ -633,9 +671,13 @@ export const LandingPage: React.FC = () => {
             </ScrollReveal>
 
             <StaggerGroup className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {CORE_FEATURES.map((feat) => (
-                <StaggerItem key={feat.title} className="h-full">
-                  <Card padding="md" interactive className="group h-full">
+              {CORE_FEATURES.map((feat, idx) => (
+                <StaggerItem
+                  key={feat.title}
+                  direction={idx % 3 === 0 ? "left" : idx % 3 === 2 ? "right" : "up"}
+                  className="h-full"
+                >
+                  <SpotlightCard padding="md" className="group h-full">
                     <div className="inline-flex h-10 w-10 items-center justify-center rounded-input border border-border bg-muted transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary-soft">
                       {feat.icon}
                     </div>
@@ -645,7 +687,7 @@ export const LandingPage: React.FC = () => {
                     <p className="mt-1.5 text-sm leading-relaxed text-content-secondary">
                       {feat.description}
                     </p>
-                  </Card>
+                  </SpotlightCard>
                 </StaggerItem>
               ))}
             </StaggerGroup>
@@ -724,13 +766,14 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* Single Final CTA */}
-        <section className="bg-canvas py-14 sm:py-20 theme-surface-transition">
+        <section className="relative overflow-hidden bg-canvas py-14 sm:py-20 theme-surface-transition">
+          <AmbientBackdrop variant="subtle" />
           <ContentContainer
             size="md"
             padded={false}
-            className="px-4 sm:px-6 lg:px-8"
+            className="relative z-10 px-4 sm:px-6 lg:px-8"
           >
-            <ScrollReveal>
+            <ScrollReveal direction="scale">
               <Card
                 padding="lg"
                 className="border-border-strong/80 text-center shadow-elevated"

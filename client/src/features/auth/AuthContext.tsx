@@ -24,6 +24,7 @@ import {
   getAuthToken,
   setAuthToken,
 } from "../../lib/api-client";
+import { useToast } from "../../context/ToastContext";
 
 interface AuthContextType {
   user: User | null;
@@ -44,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => getAuthToken());
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -103,6 +105,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         );
         setToken(response.token);
         setUser(response.user);
+        toast.success(
+          "Signed in",
+          response.user?.name
+            ? `Welcome back, ${response.user.name.split(" ")[0]}.`
+            : "Your workspace is ready.",
+        );
       } catch (err: any) {
         const msg =
           err?.message || "Login failed. Please check your credentials.";
@@ -112,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsLoading(false);
       }
     },
-    [queryClient],
+    [queryClient, toast],
   );
 
   const register = useCallback(
@@ -128,6 +136,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         );
         setToken(response.token);
         setUser(response.user);
+        toast.success(
+          "Account created",
+          "Complete onboarding to build your verified skill profile.",
+        );
       } catch (err: any) {
         const msg = err?.message || "Registration failed. Please try again.";
         setError(msg);
@@ -136,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsLoading(false);
       }
     },
-    [queryClient],
+    [queryClient, toast],
   );
 
   const logout = useCallback(async () => {
@@ -152,23 +164,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setToken(null);
       setUser(null);
       setError(null);
+      toast.info("Signed out", "Your session has been closed cleanly.");
     }
-  }, [queryClient]);
+  }, [queryClient, toast]);
 
-  const updateProfile = useCallback(async (payload: UpdateProfilePayload) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const updatedUser = await updateProfileApi(payload);
-      setUser(updatedUser);
-    } catch (err: any) {
-      const msg = err?.message || "Failed to update profile.";
-      setError(msg);
-      throw new Error(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const updateProfile = useCallback(
+    async (payload: UpdateProfilePayload) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const updatedUser = await updateProfileApi(payload);
+        setUser(updatedUser);
+        toast.success("Profile updated", "Your preferences have been saved.");
+      } catch (err: any) {
+        const msg = err?.message || "Failed to update profile.";
+        setError(msg);
+        throw new Error(msg);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [toast],
+  );
 
   return (
     <AuthContext.Provider

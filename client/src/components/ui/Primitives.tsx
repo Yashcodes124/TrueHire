@@ -806,6 +806,7 @@ export const Tabs: React.FC<TabsProps> = ({
   onChange,
   className = "",
 }) => {
+  const tabsGroupId = useId();
   const [internalTab, setInternalTab] = useState<string>(
     defaultTab || items[0]?.id || "",
   );
@@ -835,10 +836,10 @@ export const Tabs: React.FC<TabsProps> = ({
               aria-selected={isSelected}
               disabled={item.disabled}
               onClick={() => handleSelect(item.id)}
-              className={`inline-flex items-center gap-2 border-b-2 px-3.5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`relative inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 ${
                 isSelected
-                  ? "border-primary text-primary"
-                  : "border-transparent text-content-secondary hover:border-border-strong hover:text-content-heading"
+                  ? "text-primary"
+                  : "text-content-secondary hover:text-content-heading"
               }`}
             >
               <span>{item.label}</span>
@@ -852,6 +853,14 @@ export const Tabs: React.FC<TabsProps> = ({
                 >
                   {item.count}
                 </span>
+              )}
+              {isSelected && (
+                <motion.span
+                  layoutId={`tab-underline-${tabsGroupId}`}
+                  transition={{ type: "spring", stiffness: 460, damping: 36 }}
+                  className="pointer-events-none absolute inset-x-0 -bottom-px h-0.5 bg-primary"
+                  aria-hidden="true"
+                />
               )}
             </button>
           );
