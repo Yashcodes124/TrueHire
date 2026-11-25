@@ -1,89 +1,119 @@
 # System Architecture
 
-## Overview
+TrueHire (`career-lens-monorepo`) is a full-stack TypeScript monorepo consisting of a React SPA (`client/`) and an Express REST API (`server/`) backed by PostgreSQL 15 via Prisma ORM.
 
-**TrueHire** (repository root `career-lens-monorepo`) is a full-stack TypeScript career readiness and technical interview preparation platform built around a closed-loop workflow: candidates upload or paste a resume, discover verified software engineering postings synced from public ATS boards, inspect deterministic skill-gap coverage and role-fit rankings, tailor resume bullets with evidence bounds, run adaptive AI mock interviews, and persist verified or weak skill evidence back into their readiness profile.
+---
 
-![Dashboard Overview](./images/dashboard.png)
-
-## Tech Stack
-
-| Layer | Technologies |
-| --- | --- |
-| **Frontend (`client/`)** | React 18, TypeScript 5, Vite 5, Tailwind CSS 3, React Router 6, TanStack React Query 5, React Hook Form + Zod, Lucide React, Framer Motion |
-| **Backend (`server/`)** | Node.js 20, Express 4, TypeScript 5, Prisma ORM 5, Zod, Helmet, CORS, Express Rate Limit, Multer, `pdf-parse`, `mammoth`, `bcryptjs`, `jsonwebtoken` |
-| **Database** | PostgreSQL 15 (managed via Prisma schema & forward SQL migrations) |
-| **AI Provider Router** | OpenAI-compatible SDK (`openai` v7) routing across Groq, NVIDIA NIM, Google Gemini, or local Ollama with automatic failover and JSON repair |
-| **Job Ingestion** | Greenhouse public board API + Lever/Ashby connectors + external manual job import |
-| **Observability & Testing** | Vitest (unit & integration), Supertest, Playwright (E2E), optional Sentry (`@sentry/react` / `@sentry/node` hooks via `SENTRY_DSN` / `VITE_SENTRY_DSN`), built-in Admin Operations Console |
-
-## Folder Structure
-
-```text
-.
-├── client/                     # React + Vite SPA
-│   ├── src/
-│   │   ├── components/         # Shared UI primitives, ErrorBoundary, AppShell, Sidebar, TopNav, CommandPalette
-│   │   ├── features/           # Domain-sliced modules:
-│   │   │   ├── admin/          #   Admin Operations Console (/admin)
-│   │   │   ├── auth/           #   AuthContext, ProtectedRoute, Login/Register, Onboarding, Profile
-│   │   │   ├── dashboard/      #   Candidate Readiness Overview (/dashboard)
-│   │   │   ├── interview/      #   Prep, Live Interview, Evaluation + Markdown export (/interviews/*)
-│   │   │   ├── jobs/           #   Verified Jobs Explorer & Saved Jobs (/jobs, /saved-jobs)
-│   │   │   ├── landing/        #   Public marketing & workflow preview (/)
-│   │   │   ├── matching/       #   Match breakdown & Skill Gap simulator (/matches/:jobId, /skill-gaps/:jobId)
-│   │   │   ├── ontology/       #   Skill Ontology diagnostics & admin alias review (/ontology)
-│   │   │   ├── radar/          #   Role-Fit Radar rankings (/radar)
-│   │   │   ├── readiness/      #   Skill Readiness Ledger & proof submission (/readiness)
-│   │   │   ├── resume/         #   Resume upload/paste, parsing & section editor (/resume)
-│   │   │   ├── tailoring/      #   Evidence-bounded resume tailoring (/tailor/:jobId)
-│   │   │   └── tracker/        #   Application pipeline Kanban/list tracker (/applications)
-│   │   ├── lib/                # apiClient (token rotation), sanitize (HTML/URL allowlist), Sentry init
-│   │   ├── services/           # Auth API helpers
-│   │   └── __tests__/          # Client unit tests (Vitest)
-│   └── tests/e2e/              # End-to-end Playwright specs & fixtures
-├── server/                     # Express + Prisma REST API
-│   ├── prisma/
-│   │   ├── migrations/         # PostgreSQL SQL migrations (including schema/observability sync)
-│   │   ├── schema.prisma       # Authoritative relational data model (14 models)
-│   │   └── seed.ts             # Local development seed script
-│   └── src/
-│       ├── config/             # Zod env validation + fail-closed prod checks, Prisma client, Sentry
-│       ├── controllers/        # HTTP request/response handlers
-│       ├── integrations/       # Multi-provider AI client + telemetry; Greenhouse/Lever/Ashby clients
-│       ├── middleware/         # JWT auth, RBAC requireRole, rate limiters, Multer upload validation
-│       ├── modules/            # Interview prompts, Zod output schemas, adaptive evaluator
-│       ├── repositories/       # Prisma persistence queries & transactional writes
-│       ├── routes/             # Canonical /api/* Express routers (10 domain modules)
-│       ├── services/           # Business logic (auth, resume, matching, ontology, radar, readiness, interviews, admin)
-│       ├── utils/              # AppError, JWT access/refresh signing, resilient LLM JSON parser
-│       └── __tests__/          # Backend Vitest suites (15 test files)
-├── docs/                       # Production documentation and UI screenshots
-├── .github/workflows/          # CI, CD, and Playwright E2E pipelines
-├── docker-compose.yml          # Local PostgreSQL 15 service
-└── render.yaml                 # Render backend deployment blueprint
-```
-
-## System Architecture Diagram
+## High-Level System Architecture
 
 ```mermaid
-flowchart LR
-    Browser["React SPA (Vite + React Query)\nPort 3000 (dev) / Vercel (prod)"]
-    API["Express 4 REST API\nPort 5000 / Render"]
-    AuthMW["Helmet + CORS + Rate Limit\nJWT Auth + RBAC"]
-    Services["Domain Services\nResume · Matching · Ontology\nRadar · Tailoring · Interviews · Readiness"]
-    AI["Multi-Provider AI Router\nGroq · NVIDIA · Gemini · Ollama"]
-    ATS["ATS Connectors\nGreenhouse · Lever · Ashby"]
-    DB[("PostgreSQL 15\nPrisma ORM")]
+flowchart TB
+    subgraph Client["Frontend SPA (client/ · React 18 + Vite)"]
+        UI["Feature Pages & AppShell\n(Lazy-loaded routes + ErrorBoundary)"]
+        RQ["TanStack React Query + apiClient\n(Bearer JWT + auto refresh rotation)"]
+        UI --> RQ
+    end
 
-    Browser -- "HTTPS JSON + Bearer JWT\n(Auto refresh rotation)" --> API
-    API --> AuthMW --> Services
-    Services <--> DB
-    Services -- "Structured JSON Prompts\nFailover + Telemetry" --> AI
-    Services -- "Scheduled / Admin Sync\nSlug-validated + Timeout" --> ATS
+    subgraph Server["Backend API (server/ · Node 20 + Express 4)"]
+        MW["Middleware Pipeline\nHelmet · CORS · Rate Limiters · JWT Auth · RBAC · Multer"]
+        RT["Routes (10 domain routers under /api/*)"]
+        CT["Controllers (HTTP validation & serialization)"]
+        SV["Services (Domain logic & deterministic engines)"]
+        RP["Repositories (Prisma queries & transactions)"]
+        MW --> RT --> CT --> SV --> RP
+    end
+
+    subgraph External["External Integrations"]
+        AI["Multi-Provider AI Router\nGroq · NVIDIA NIM · Gemini · Ollama"]
+        ATS["Public ATS Connectors\nGreenhouse · Lever · Ashby"]
+    end
+
+    DB[("PostgreSQL 15\nPrisma ORM (14 models)")]
+
+    RQ -- "HTTPS JSON / multipart" --> MW
+    RP <--> DB
+    SV -- "Structured JSON prompts +\nZod validation + AiRequestAudit" --> AI
+    SV -- "Scheduled & Admin Sync +\nJobSyncAudit" --> ATS
 ```
 
-## Core Closed-Loop User Flow
+---
+
+## Layered Backend Architecture (`server/src/`)
+
+Every HTTP request follows a strict one-way layering discipline so transport concerns stay separate from domain logic and SQL persistence:
+
+```text
+routes -> controllers -> services -> repositories -> prisma
+```
+
+| Layer | Directory | Responsibility |
+| --- | --- | --- |
+| **App & Config** | `src/app.ts`, `src/index.ts`, `src/config/` | Express setup (`trust proxy`, Helmet, CORS allowlist, centralized `AppError`/Zod/Multer error handler), Zod env validation (`env.ts`), Prisma singleton (`db.ts`), optional Sentry hooks (`sentry.ts`), ontology DB hydration, and background job sync scheduler. |
+| **Middleware** | `src/middleware/` | `authMiddleware.ts` (JWT verification rejecting refresh tokens), `requireRole.ts` (`ADMIN` guard), `rateLimit.ts` (5 tiers: global, auth, upload, AI, admin), `uploadMiddleware.ts` (Multer in-memory 5 MB PDF/DOCX filter on field `resume`). |
+| **Routes** | `src/routes/` | 10 Express routers mounted in `app.ts`: `admin`, `auth`, `resumes`, `jobs`, `matches`, `interviews`, `applications`, `readiness`, `ontology`, `radar`. |
+| **Controllers** | `src/controllers/` | Parse params/body, enforce request-level input checks, invoke services, and format JSON responses. |
+| **Services** | `src/services/` | Core business rules: resume extraction/quality scoring, deterministic skill ontology & matching (`matching/`), Role-Fit Radar, evidence-bounded tailoring (`tailoring/`), interview orchestration & adaptive follow-ups, readiness rule engine (`readiness/`), skill evidence mapping (`skills/`), ATS sync (`greenhouseSyncService.ts`), admin analytics (`admin/`), and telemetry (`telemetry/`). |
+| **Repositories** | `src/repositories/` | 8 Prisma data-access modules (`application`, `interview`, `job`, `match`, `resume`, `savedJob`, `skill`, `user`), enforcing user-scoped queries and atomic transactions (e.g., `saveEvaluationWithSkillEvidence`). |
+| **Integrations** | `src/integrations/` | Multi-provider OpenAI-compatible AI router (`ai/`) and ATS board clients/adapters/Zod schemas (`jobs/greenhouse/`, `jobs/lever/`, `jobs/ashby/`). |
+| **Modules** | `src/modules/` | Prompt builders, adaptive interviewer helpers, and Zod output schemas for interview plans, questions, per-question evaluations (`interview/`), and final rubric reports (`evaluation/`). |
+
+### Deterministic vs. AI Boundaries
+
+TrueHire intentionally keeps critical scoring paths deterministic and reserves LLMs for unstructured extraction and open-ended interview reasoning:
+
+- **Deterministic (zero LLM calls):**
+  - Skill extraction & normalization (`skillDictionary.ts`, `skillNormalizer.ts`, `jobSkillExtractor.ts` — 340+ canonical skills across 9 families with whole-word boundary matching)
+  - Resume-to-job match scoring, skill gap prioritization, offense/defense tactical matrix, and what-if simulation (`matchingService.ts`, `matchService.ts`)
+  - Role-Fit Radar 5-bucket classification (`roleFitRadarService.ts`)
+  - Evidence-bounded resume tailoring (`tailoringService.ts`)
+  - Readiness defensibility scoring and next-action rule engine (`readinessService.ts`, `nextAction.ts`)
+  - Interview report-to-`UserSkill` evidence mapping (`skillEvidence.ts`)
+- **AI-assisted (Zod-validated + audited):**
+  - Resume structure extraction (`RESUME_ANALYSIS`)
+  - Default interview plan generation & question generation (`INTERVIEW_GENERATION`)
+  - Per-question answer evaluation (`INTERVIEW_ANSWER_EVAL`) and adaptive follow-up generation (with deterministic template fallback)
+  - Final 5-dimension rubric evaluation (`INTERVIEW_FINAL_EVAL`)
+
+---
+
+## Frontend Architecture (`client/src/`)
+
+The client is a Vite + React 18 SPA organized by product domain (`src/features/`), with route-level `React.lazy` code splitting and manual Rollup vendor chunks (`react-vendor`, `query-vendor`, `motion-vendor`, `icons-vendor`, `sentry-vendor`) in `client/vite.config.ts`.
+
+```text
+client/src/
+├── App.tsx                  # Route definitions, ProtectedRoute, AdminRoute, lazy imports
+├── components/
+│   ├── ErrorBoundary.tsx    # Top-level crash recovery
+│   ├── layout/              # AppShell (workspace/auth/minimal), Sidebar, TopNav, MobileNav, CommandPalette (Cmd/Ctrl+K)
+│   └── ui/                  # Shared primitives, Charts, ThemeToggle, MotionPrimitives, SmoothScrollProvider
+├── context/                 # ThemeContext, ToastContext
+├── features/
+│   ├── admin/               # Admin Operations Console (/admin)
+│   ├── auth/                # AuthContext, Login/Register, OnboardingWizard, Profile
+│   ├── dashboard/           # Candidate readiness overview (/dashboard)
+│   ├── interview/           # List, Prep, Live Interview, Evaluation + Markdown export (/interviews/*)
+│   ├── jobs/                # ATS job explorer & saved jobs (/jobs, /saved-jobs)
+│   ├── landing/             # Public landing page (/)
+│   ├── matching/            # Match breakdown & skill-gap what-if simulator (/matches/:jobId, /skill-gaps/:jobId)
+│   ├── ontology/            # Ontology coverage, audits & admin review queue (/ontology)
+│   ├── radar/               # Role-Fit Radar 5-bucket view (/radar)
+│   ├── readiness/           # Skill ledger & proof submission (/readiness, /skills)
+│   ├── resume/              # File upload, paste, parsed preview & inline section editor (/resume)
+│   ├── tailoring/           # Evidence-bounded tailoring workbench (/tailor/:jobId)
+│   └── tracker/             # Application pipeline tracker (/applications)
+├── lib/                     # api-client.ts, sanitize.ts, chartMath.ts, theme.ts, toast.ts, sentry.ts
+└── services/                # authApi.ts
+```
+
+### Client Security & Resilience
+
+- **Token lifecycle (`client/src/lib/api-client.ts`):** Injects `Authorization: Bearer <token>`, deduplicates concurrent 401 refresh calls via a shared `refreshPromise`, retries once with the rotated access token, and clears storage + dispatches `truehire:unauthorized` on refresh failure.
+- **Untrusted content sanitization (`client/src/lib/sanitize.ts`):** External job HTML is filtered through an allowlist sanitizer before rendering, and external links are validated against `http:`/`https:`.
+
+---
+
+## Closed-Loop Sequence Flow
 
 ```mermaid
 sequenceDiagram
@@ -94,41 +124,57 @@ sequenceDiagram
     participant AI as AI Provider Router
 
     Candidate->>SPA: Upload PDF/DOCX or paste resume
-    SPA->>API: POST /api/resumes (multipart/form-data)
-    API->>AI: Extract structured profile & skills
+    SPA->>API: POST /api/resumes (or /paste)
+    API->>AI: Structured resume extraction (Zod validated)
     API->>DB: Save Resume + ResumeParseAudit
-    API-->>SPA: Parsed resume + normalized skills
+    API-->>SPA: Parsed resume, skills & parse quality
 
-    Candidate->>SPA: Explore Jobs / Role-Fit Radar
-    SPA->>API: GET /api/radar & POST /api/matches
-    API->>DB: Load active jobs & user skill evidence
-    API-->>SPA: Deterministic match score, gaps & priorities
+    Candidate->>SPA: Inspect Role-Fit Radar / Match Job
+    SPA->>API: GET /api/radar · POST /api/matches
+    API->>DB: Query active Jobs + UserSkill evidence
+    API-->>SPA: Deterministic score, gaps & tactical matrix
 
-    Candidate->>SPA: Launch targeted mock interview
-    SPA->>API: POST /api/interviews & POST /api/interviews/:id/start
-    API->>AI: Generate role & gap-focused plan + questions
-    API->>DB: Persist Interview + InterviewQuestions
+    Candidate->>SPA: Create & start targeted interview
+    SPA->>API: POST /api/interviews · POST /api/interviews/:id/start
+    API->>AI: Generate plan + questions targeting skill gaps
+    API->>DB: Save Interview + InterviewQuestions
 
-    loop For each question
+    loop Each question in sequence
         Candidate->>SPA: Submit answer
         SPA->>API: POST /api/interviews/:id/questions/:qId/answer
         API->>DB: Persist raw answer first (crash-safe)
-        API->>AI: Score answer & check adaptive follow-up trigger
-        API->>DB: Save feedback JSONB (+ optional follow-up question)
+        API->>AI: Evaluate answer + check adaptive follow-up
+        API->>DB: Save JSONB feedback (+ optional follow-up question)
     end
 
-    Candidate->>SPA: Complete & view evaluation report
+    Candidate->>SPA: Generate final evaluation
     SPA->>API: POST /api/interviews/:id/evaluation
-    API->>AI: Generate 6-dimension evaluation report
-    API->>DB: Transactionally save Evaluation + UserSkill (STRONG/WEAK) + transcript
-    API-->>SPA: Evaluation report (viewable & exportable to Markdown)
+    API->>AI: 5-dimension rubric evaluation
+    API->>DB: Transaction: save Evaluation + upsert UserSkill (STRONG/WEAK) + transcript
+    API-->>SPA: Report (reflected immediately in /readiness, /matches, /radar)
 ```
 
-![Role Match Breakdown](./images/match-breakdown.png)
+---
 
-## Key Design Patterns
+## AI Provider Fallback Flow
 
-- **Closed-Loop Skill Evidence:** Resume claims start as unverified (`RESUME_EXTRACTED`); interview evaluations and proof submissions transactionally write `STRONG` or `WEAK` rows into `user_skills`, which directly influence readiness scores, match confidence, and Role-Fit Radar recommendations.
-- **Deterministic Skill Ontology (`server/src/services/matching/skillDictionary.ts`):** Canonical skills, aliases, families, and prerequisites are resolved deterministically before matching or gap calculation. Unrecognized tokens are queued for admin review and persisted in `ontology_aliases`.
-- **Fail-Safe Interview Answer Persistence:** `submitAnswerService` writes the candidate's raw answer before invoking AI scoring. If AI evaluation fails (`503 EVALUATION_PENDING`), the answer is preserved and retryable; once scored, the question is locked (`409 ALREADY_ANSWERED`).
-- **Defense-in-Depth Rendering & Auth:** Untrusted job posting HTML passes through an allowlist sanitizer (`client/src/lib/sanitize.ts`) and external links require `http:`/`https:`. Access and refresh JWTs carry distinct `tokenType` claims, refresh tokens are stored hashed with constant-time comparison and rotated/revoked on logout, and React routes are wrapped in a global `ErrorBoundary` with `React.lazy` code splitting.
+All AI calls pass through `analyzeResume()` in `server/src/integrations/ai/aiClient.ts`:
+
+```mermaid
+flowchart LR
+    Req["Service Prompt +\nFeature + Optional Zod Schema"] --> Mock{"AI_E2E_MOCK=true\n& non-prod?"}
+    Mock -- "Yes" --> Det["Deterministic E2E Mock\n+ AiRequestAudit"]
+    Mock -- "No" --> Chain["Build Provider Chain\nPrimary -> Configured Secondaries\n(groq · nvidia · gemini · ollama)"]
+    Chain --> Call["Invoke Active Provider\n(Groq also falls back to GROQ_FAST_MODEL)"]
+    Call --> Parse["parseModelJson() +\nZod safeParse()"]
+    Parse -- "Valid" --> AuditOK["Record Audit\n(SUCCESS / FALLBACK)"]
+    Parse -- "Malformed JSON /\nSchema mismatch" --> Repair["1x Repair Retry\non Same Provider"]
+    Repair -- "Valid" --> AuditOK
+    Repair -- "Fails" --> Fail["Record FAILURE Audit\n& Sanitize Error"]
+    Call -- "HTTP / Timeout /\nRate Limit Error" --> Fail
+    Fail --> Next{"Next configured\nprovider?"}
+    Next -- "Yes" --> Call
+    Next -- "No" --> Err["Throw Sanitized AppError\n(429 / 502 / 503 / 504)"]
+```
+
+See [AI Models & Telemetry](./ai-models.md) for provider model tiers, JSON parsing rules, and cost tracking, and [API & Data Model](./api-and-data.md) for endpoint contracts and Prisma models.
