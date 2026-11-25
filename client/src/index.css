@@ -14,6 +14,7 @@
     color-scheme: dark;
 
     /* Surface & Background Tokens (60-30-10 discipline) */
+    --bg-outer-mat: #05070a;
     --bg-canvas: #090c10;
     --bg-surface: #11161e;
     --bg-muted: #18202b;
@@ -82,9 +83,9 @@
     --body-tracking: 0.005em;
 
     /* Typography Stack */
-    --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-display: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
   /* ==========================================================================
@@ -97,6 +98,7 @@
     color-scheme: light;
 
     /* Surface & Background Tokens */
+    --bg-outer-mat: #e8e3d9;
     --bg-canvas: #f5f3ee;
     --bg-surface: #ffffff;
     --bg-muted: #ece8df;

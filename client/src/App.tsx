@@ -35,6 +35,11 @@ const LandingPage = lazy(() =>
     default: m.LandingPage,
   })),
 );
+const SupportPage = lazy(() =>
+  import("./features/support/SupportPage").then((m) => ({
+    default: m.SupportPage,
+  })),
+);
 const DashboardPage = lazy(() =>
   import("./features/dashboard/DashboardPage").then((m) => ({
     default: m.DashboardPage,
@@ -185,6 +190,8 @@ const AnimatedAppRoutes: React.FC = () => {
 
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/support" element={<SupportPage />} />
+              <Route path="/contact" element={<SupportPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -24,21 +24,19 @@ import {
   Card,
   EDITORIAL_EASE,
   FeedbackCard,
-  ParallaxLayer,
   ProgressBar,
   RadarCompetencyChart,
   RequirementRow,
   ScoreRing,
-  ScrollProgressBar,
   ScrollReveal,
-  Skeleton,
   SkillBadge,
   SpotlightCard,
   StaggerGroup,
   StaggerItem,
   Tabs,
-  ThemeToggle,
 } from "../../components/ui";
+import { MarketingShell } from "./MarketingShell";
+import { HeroSignalShowcase } from "./hero3d/HeroSignalShowcase";
 
 const PREVIEW_EVAL_RADAR = [
   { label: "Accuracy", value: 86 },
@@ -59,61 +57,28 @@ const PREVIEW_READINESS_TREND = [
 
 const WORKFLOW_STEPS = [
   {
-    step: "01",
+    number: "01",
     title: "Upload your resume",
     description:
       "Upload a PDF or DOCX resume to extract your baseline technical skills and project experience.",
   },
   {
-    step: "02",
+    number: "02",
     title: "Compare with real roles",
     description:
       "Check how your skills match verified company postings or paste any job description you want to evaluate.",
   },
   {
-    step: "03",
+    number: "03",
     title: "Prioritize missing skills",
     description:
       "See which requirements you already meet and which gaps appear most often across your saved roles.",
   },
   {
-    step: "04",
+    number: "04",
     title: "Practice and record evidence",
     description:
       "Complete a 15–60 minute targeted mock interview. Rubric scores update your skill profile automatically.",
-  },
-];
-
-const CLOSED_LOOP_NODES = [
-  {
-    index: "01",
-    stage: "Resume",
-    summary: "Extract skills you can review and edit.",
-  },
-  {
-    index: "02",
-    stage: "Job Matching",
-    summary: "Compare your skills against role requirements.",
-  },
-  {
-    index: "03",
-    stage: "Skill Gaps",
-    summary: "Rank missing skills by role frequency.",
-  },
-  {
-    index: "04",
-    stage: "Interview",
-    summary: "Answer questions focused on weak or missing skills.",
-  },
-  {
-    index: "05",
-    stage: "Evaluation",
-    summary: "Score each answer against a clear rubric.",
-  },
-  {
-    index: "06",
-    stage: "Skill Profile",
-    summary: "Carry verified evidence into your next job match.",
   },
 ];
 
@@ -157,7 +122,7 @@ const CORE_FEATURES = [
 ];
 
 export const LandingPage: React.FC = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [previewTab, setPreviewTab] = useState<string>("match");
 
@@ -165,680 +130,585 @@ export const LandingPage: React.FC = () => {
     isAuthenticated || user ? "/dashboard" : "/register";
 
   return (
-    <div className="min-h-screen bg-canvas text-content-body theme-surface-transition">
-      <ScrollProgressBar />
+    <MarketingShell>
+      {/* Hero Section — Unified Canvas + New 3D Spatial Verification Stack */}
+      <section className="relative pt-8 pb-16 sm:pt-12 sm:pb-24 lg:pt-14 lg:pb-28">
+        <AmbientBackdrop variant="hero" />
 
-      {/* Sticky 3-Zone Top Navigation */}
-      <header className="sticky top-0 z-30 h-16 border-b border-border bg-surface/90 backdrop-blur-md theme-surface-transition">
         <ContentContainer
           size="xl"
           padded={false}
-          className="flex h-full items-center justify-between gap-3 px-4 sm:px-6 lg:px-8"
+          className="relative z-10 px-5 sm:px-8 lg:px-12"
         >
-          <div className="flex items-center gap-8 min-w-0">
-            <Link
-              to="/"
-              className="flex shrink-0 items-center gap-2.5 rounded-sm font-display text-base font-bold tracking-tight text-content-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
+            {/* Left Column: Editorial Headline & Primary Actions */}
+            <motion.div
+              initial={{ opacity: 0.96, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.34, ease: EDITORIAL_EASE }}
+              className="space-y-6 lg:col-span-5"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary font-mono text-xs font-bold text-primary-foreground shadow-xs">
-                TH
-              </span>
-              <span>TrueHire</span>
-            </Link>
+              <h1 className="font-display text-3xl font-bold tracking-[-0.03em] text-content-heading sm:text-4xl lg:text-[3.2rem] lg:leading-[1.06]">
+                Know which requirements you meet before you apply.
+              </h1>
 
-            <nav
-              aria-label="Marketing sections"
-              className="hidden items-center gap-6 text-sm font-medium text-content-secondary md:flex"
-            >
-              <a
-                href="#closed-loop"
-                className="whitespace-nowrap transition-colors duration-150 hover:text-content-heading"
-              >
-                Closed-loop
-              </a>
-              <a
-                href="#how-it-works"
-                className="whitespace-nowrap transition-colors duration-150 hover:text-content-heading"
-              >
-                How it works
-              </a>
-              <a
-                href="#features"
-                className="whitespace-nowrap transition-colors duration-150 hover:text-content-heading"
-              >
-                Capabilities
-              </a>
-            </nav>
-          </div>
+              <p className="max-w-[50ch] text-[15.5px] leading-relaxed text-content-body sm:text-base">
+                Upload your resume to inspect exact skill coverage on real
+                engineering roles, prioritize your highest-frequency gaps, and
+                practice targeted mock interviews that update your readiness
+                profile.
+              </p>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
-            <ThemeToggle variant="segmented" className="hidden lg:inline-flex" />
-            <ThemeToggle variant="compact" className="lg:hidden" />
-
-            {isLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : isAuthenticated || user ? (
-              <>
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate(primaryDestination)}
+                  className="!rounded-full px-6"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  {isAuthenticated || user
+                    ? "Go to Dashboard"
+                    : "Start with your resume"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
                   onClick={() => navigate("/jobs")}
-                  className="hidden sm:inline-flex"
+                  className="!rounded-full px-5"
                 >
-                  Explore Jobs
+                  Browse verified jobs
                 </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => navigate("/dashboard")}
-                  rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
-                >
-                  Dashboard
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate("/login")}
-                >
-                  Sign in
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => navigate("/register")}
-                  rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
-                >
-                  Get started
-                </Button>
-              </>
-            )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 pt-6 sm:gap-5">
+                <div>
+                  <p className="whitespace-nowrap font-mono text-sm font-semibold text-content-heading tabular-nums sm:text-base">
+                    8 / 12
+                  </p>
+                  <p className="mt-1 text-xs leading-snug text-content-secondary">
+                    Transparent coverage
+                  </p>
+                </div>
+                <div>
+                  <p className="whitespace-nowrap font-mono text-sm font-semibold text-content-heading tabular-nums sm:text-base">
+                    15–60m
+                  </p>
+                  <p className="mt-1 text-xs leading-snug text-content-secondary">
+                    Skill-scoped mocks
+                  </p>
+                </div>
+                <div>
+                  <p className="whitespace-nowrap font-mono text-sm font-semibold text-content-heading tabular-nums sm:text-base">
+                    Direct ATS
+                  </p>
+                  <p className="mt-1 text-xs leading-snug text-content-secondary">
+                    Official company boards
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column: New 3D Spatial Verification Stack */}
+            <motion.div
+              initial={{ opacity: 0.96, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.42, delay: 0.05, ease: EDITORIAL_EASE }}
+              className="lg:col-span-7"
+            >
+              <HeroSignalShowcase />
+            </motion.div>
           </div>
         </ContentContainer>
-      </header>
+      </section>
 
-      <main>
-        {/* Hero Section — Immediate First-Paint Visibility + Subtle Editorial Motion */}
-        <section className="relative overflow-hidden border-b border-border bg-canvas py-12 sm:py-16 lg:py-20 theme-surface-transition">
-          <AmbientBackdrop variant="hero" />
-
-          <ContentContainer
-            size="xl"
-            padded={false}
-            className="relative z-10 px-4 sm:px-6 lg:px-8"
-          >
-            <div className="grid items-start gap-10 lg:grid-cols-12 lg:items-center lg:gap-12">
-              {/* Left Column: Headline & Actions */}
-              <motion.div
-                initial={{ opacity: 0.96, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.32, ease: EDITORIAL_EASE }}
-                className="space-y-6 lg:col-span-5"
-              >
-                <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                  Verified Job Discovery · Interview Readiness
-                </p>
-
-                <h1 className="font-display text-3xl font-bold tracking-tight text-content-heading sm:text-4xl lg:text-[3.05rem] lg:leading-[1.08]">
-                  Know which requirements you meet before you apply.
-                </h1>
-
-                <p className="max-w-[56ch] text-base leading-relaxed text-content-body">
-                  Upload your resume to inspect exact skill coverage on real
-                  engineering roles, prioritize your highest-frequency gaps, and
-                  practice targeted mock interviews that update your readiness
-                  profile.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={() => navigate(primaryDestination)}
-                    rightIcon={<ArrowRight className="h-4 w-4" />}
-                  >
-                    {isAuthenticated || user
-                      ? "Go to Dashboard"
-                      : "Start with your resume"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={() => navigate("/jobs")}
-                  >
-                    Browse verified jobs
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 border-t border-border pt-6">
-                  <div>
-                    <p className="font-mono text-base font-semibold text-content-heading tabular-nums">
-                      8 / 12
-                    </p>
-                    <p className="mt-1 text-xs leading-snug text-content-secondary">
-                      Transparent requirement coverage
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-base font-semibold text-content-heading tabular-nums">
-                      15–60m
-                    </p>
-                    <p className="mt-1 text-xs leading-snug text-content-secondary">
-                      Skill-scoped mock interviews
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-base font-semibold text-content-heading tabular-nums">
-                      Direct ATS
-                    </p>
-                    <p className="mt-1 text-xs leading-snug text-content-secondary">
-                      Synced from company boards
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Right Column: Interactive Product Preview */}
-              <motion.div
-                initial={{ opacity: 0.96, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.06, ease: EDITORIAL_EASE }}
-                className="lg:col-span-7"
-              >
-                <ParallaxLayer offset={10}>
-                  <Card
-                    padding="none"
-                    className="overflow-hidden border-border-strong/70 shadow-elevated"
-                  >
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/70 px-4 py-3 sm:px-6">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-display text-xs font-semibold text-content-heading">
-                        Live Workspace Preview
-                      </span>
-                      <span className="font-mono text-[11px] text-content-secondary">
-                        Backend Engineer · Sample Role
-                      </span>
-                    </div>
-                    <span className="font-mono text-[11px] text-primary">
-                      Interactive stages
-                    </span>
-                  </div>
-
-                  <div className="p-4 sm:p-6">
-                    <Tabs
-                      activeTab={previewTab}
-                      onChange={setPreviewTab}
-                      items={[
-                        {
-                          id: "match",
-                          label: "1. Role Match",
-                          content: (
-                            <div className="space-y-4">
-                              <Card
-                                muted
-                                padding="sm"
-                                className="flex flex-wrap items-center justify-between gap-4"
-                              >
-                                <div className="space-y-1">
-                                  <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-content-secondary">
-                                    Requirement Coverage
-                                  </p>
-                                  <p className="text-base font-semibold text-content-heading">
-                                    You meet 8 of 12 requirements for this role.
-                                  </p>
-                                  <p className="text-xs text-content-secondary">
-                                    6 skills verified in interviews · 2 skills
-                                    on resume · 4 gaps identified
-                                  </p>
-                                </div>
-                                <ScoreRing score={67} size={68} label="Match" />
-                              </Card>
-
-                              <div className="space-y-2.5">
-                                <RequirementRow
-                                  skill="PostgreSQL"
-                                  status="MET"
-                                  evidence="Verified in technical mock interview (86/100)"
-                                />
-                                <RequirementRow
-                                  skill="TypeScript & Node.js"
-                                  status="PRACTICED"
-                                  evidence="Matched on resume + practiced in 1 session"
-                                />
-                                <RequirementRow
-                                  skill="API Authentication"
-                                  status="MISSING"
-                                  priority="high"
-                                  frequencyLabel="Appears in 7 saved jobs"
-                                />
-                              </div>
-                            </div>
-                          ),
-                        },
-                        {
-                          id: "gaps",
-                          label: "2. Skill Gaps",
-                          content: (
-                            <div className="space-y-3">
-                              <Card muted padding="sm">
-                                <p className="text-xs font-semibold text-content-heading">
-                                  Your strongest gap is API authentication. It
-                                  appears in 7 of your saved jobs.
-                                </p>
-                                <p className="mt-1 text-xs text-content-secondary">
-                                  Gaps are ranked by how frequently they appear
-                                  across your target roles.
-                                </p>
-                              </Card>
-                              <RequirementRow
-                                skill="API Authentication (OAuth2 / JWT)"
-                                status="MISSING"
-                                priority="high"
-                                evidence="Required in 7 of 9 saved backend roles"
-                              />
-                              <RequirementRow
-                                skill="Redis Distributed Caching"
-                                status="WEAK"
-                                priority="high"
-                                evidence="Scored 48/100 in last interview — needs practice"
-                              />
-                              <RequirementRow
-                                skill="Rate Limiting & Backpressure"
-                                status="MISSING"
-                                priority="medium"
-                                evidence="Required in 4 of 9 saved backend roles"
-                              />
-                            </div>
-                          ),
-                        },
-                        {
-                          id: "interview",
-                          label: "3. Evaluation",
-                          content: (
-                            <div className="grid gap-4 md:grid-cols-12 md:items-center">
-                              <div className="md:col-span-5">
-                                <RadarCompetencyChart
-                                  data={PREVIEW_EVAL_RADAR}
-                                  size={224}
-                                  title="Rubric"
-                                />
-                              </div>
-                              <div className="md:col-span-7">
-                                <FeedbackCard
-                                  title="Question 2 Evaluation · API Authentication"
-                                  score={84}
-                                  summary="Clear explanation of short-lived access tokens paired with rotating refresh tokens and revocation lists."
-                                  strengths={[
-                                    "Explained token rotation and replay detection clearly.",
-                                    "Addressed stateless vs. stateful revocation trade-offs.",
-                                  ]}
-                                  improvements={[
-                                    "Specify cookie security flags (HttpOnly, SameSite, Secure) when storing refresh tokens.",
-                                  ]}
-                                />
-                              </div>
-                            </div>
-                          ),
-                        },
-                        {
-                          id: "profile",
-                          label: "4. Skill Profile",
-                          content: (
-                            <div className="space-y-4">
-                              <Card muted padding="sm">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <div>
-                                    <p className="text-sm font-semibold text-content-heading">
-                                      Your readiness improved by 6 points after
-                                      your last interview.
-                                    </p>
-                                    <p className="text-xs text-content-secondary">
-                                      API Authentication moved from Missing to
-                                      Practiced.
-                                    </p>
-                                  </div>
-                                  <Badge tone="success">+6 pts</Badge>
-                                </div>
-                              </Card>
-
-                              <Card padding="sm" className="bg-canvas/50">
-                                <AreaTrendChart
-                                  data={PREVIEW_READINESS_TREND}
-                                  height={132}
-                                  title="Readiness progression"
-                                />
-                              </Card>
-
-                              <div className="space-y-2.5">
-                                <ProgressBar
-                                  label="Backend APIs & Auth"
-                                  value={84}
-                                  tone="success"
-                                />
-                                <ProgressBar
-                                  label="Relational Databases"
-                                  value={78}
-                                  tone="primary"
-                                />
-                              </div>
-
-                              <div className="flex flex-wrap gap-2 pt-0.5">
-                                <SkillBadge
-                                  skill="PostgreSQL"
-                                  level="VERIFIED"
-                                />
-                                <SkillBadge
-                                  skill="API Authentication"
-                                  level="PRACTICED"
-                                />
-                                <SkillBadge
-                                  skill="TypeScript"
-                                  level="VERIFIED"
-                                />
-                                <SkillBadge
-                                  skill="Redis Caching"
-                                  level="WEAK"
-                                />
-                              </div>
-                            </div>
-                          ),
-                        },
-                      ]}
-                    />
-                  </div>
-                </Card>
-                </ParallaxLayer>
-              </motion.div>
-            </div>
-          </ContentContainer>
-        </section>
-
-        {/* Closed-Loop Workflow Strip */}
-        <section
-          id="closed-loop"
-          className="overflow-x-clip border-b border-border bg-surface py-14 sm:py-20 theme-surface-transition"
+      {/* Swapped Interactive Workspace Preview — Seamless Flow, No Hard Section Dividers */}
+      <section
+        id="workspace-preview"
+        className="scroll-mt-24 py-14 sm:py-20 lg:py-24"
+      >
+        <ContentContainer
+          size="xl"
+          padded={false}
+          className="px-5 sm:px-8 lg:px-12"
         >
-          <ContentContainer
-            size="xl"
-            padded={false}
-            className="px-4 sm:px-6 lg:px-8"
-          >
-            <ScrollReveal direction="left" className="max-w-2xl space-y-2.5">
-              <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                Closed-Loop System
-              </p>
-              <h2 className="font-display text-2xl font-bold tracking-tight text-content-heading sm:text-3xl">
+          <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
+            {/* Editorial Left Explanation */}
+            <ScrollReveal
+              direction="up"
+              className="space-y-5 lg:col-span-4 lg:pt-2"
+            >
+              <h2 className="font-display text-2xl font-bold tracking-[-0.025em] text-content-heading sm:text-3xl lg:text-[2.15rem] lg:leading-[1.12]">
                 Every interview updates your skill profile.
               </h2>
-              <p className="text-sm leading-relaxed text-content-secondary sm:text-base">
+              <p className="text-sm leading-relaxed text-content-secondary sm:text-[15px]">
                 Most job tools stop at a static resume keyword score. TrueHire
                 connects your resume, role requirements, and interview feedback
                 into one continuous evidence loop.
               </p>
+
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 font-mono text-xs font-medium text-content-secondary tabular-nums">
+                    01
+                  </span>
+                  <p className="text-sm text-content-body">
+                    Inspect exact matched, practiced, and missing requirements
+                    before sending an application.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 font-mono text-xs font-medium text-content-secondary tabular-nums">
+                    02
+                  </span>
+                  <p className="text-sm text-content-body">
+                    Rank gaps by how often they appear across your saved
+                    engineering postings.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 font-mono text-xs font-medium text-content-secondary tabular-nums">
+                    03
+                  </span>
+                  <p className="text-sm text-content-body">
+                    Turn rubric evaluations into verified proof that lifts your
+                    match readiness.
+                  </p>
+                </div>
+              </div>
             </ScrollReveal>
 
-            <StaggerGroup className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-              {CLOSED_LOOP_NODES.map((node) => (
-                <StaggerItem key={node.stage} direction="up" className="h-full">
-                  <SpotlightCard
-                    padding="sm"
-                    className="flex h-full flex-col justify-between"
-                  >
-                    <div>
-                      <span className="font-mono text-[11px] font-semibold text-primary tabular-nums">
-                        {node.index}
-                      </span>
-                      <p className="mt-1 font-display text-sm font-semibold text-content-heading">
-                        {node.stage}
-                      </p>
-                      <p className="mt-1.5 text-xs leading-relaxed text-content-secondary">
-                        {node.summary}
-                      </p>
-                    </div>
-                  </SpotlightCard>
-                </StaggerItem>
-              ))}
-            </StaggerGroup>
-          </ContentContainer>
-        </section>
-
-        {/* How It Works (4 Concrete Steps) */}
-        <section
-          id="how-it-works"
-          className="overflow-x-clip border-b border-border bg-canvas py-14 sm:py-20 theme-surface-transition"
-        >
-          <ContentContainer
-            size="xl"
-            padded={false}
-            className="px-4 sm:px-6 lg:px-8"
-          >
-            <ScrollReveal direction="right" className="max-w-2xl space-y-2.5">
-              <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                How It Works
-              </p>
-              <h2 className="font-display text-2xl font-bold tracking-tight text-content-heading sm:text-3xl">
-                Four steps from resume upload to verified readiness.
-              </h2>
-            </ScrollReveal>
-
-            <StaggerGroup className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {WORKFLOW_STEPS.map((item, idx) => (
-                <StaggerItem
-                  key={item.step}
-                  direction={idx % 2 === 0 ? "up" : "scale"}
-                  className="h-full"
-                >
-                  <SpotlightCard padding="md" className="h-full">
-                    <span className="inline-flex items-center font-mono text-xs font-semibold text-primary tabular-nums">
-                      STEP {item.step}
-                    </span>
-                    <h3 className="mt-3 font-display text-base font-semibold text-content-heading">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-content-secondary">
-                      {item.description}
-                    </p>
-                  </SpotlightCard>
-                </StaggerItem>
-              ))}
-            </StaggerGroup>
-          </ContentContainer>
-        </section>
-
-        {/* Core Product Capabilities */}
-        <section
-          id="features"
-          className="overflow-x-clip border-b border-border bg-surface py-14 sm:py-20 theme-surface-transition"
-        >
-          <ContentContainer
-            size="xl"
-            padded={false}
-            className="px-4 sm:px-6 lg:px-8"
-          >
-            <ScrollReveal direction="left" className="max-w-2xl space-y-2.5">
-              <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                Core Capabilities
-              </p>
-              <h2 className="font-display text-2xl font-bold tracking-tight text-content-heading sm:text-3xl">
-                Built for practical engineering preparation.
-              </h2>
-              <p className="text-sm leading-relaxed text-content-secondary sm:text-base">
-                Transparent matching, source-verified job postings, and
-                non-fabricated resume tailoring.
-              </p>
-            </ScrollReveal>
-
-            <StaggerGroup className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {CORE_FEATURES.map((feat, idx) => (
-                <StaggerItem
-                  key={feat.title}
-                  direction={idx % 3 === 0 ? "left" : idx % 3 === 2 ? "right" : "up"}
-                  className="h-full"
-                >
-                  <SpotlightCard padding="md" className="group h-full">
-                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-input border border-border bg-muted transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary-soft">
-                      {feat.icon}
-                    </div>
-                    <h3 className="mt-4 font-display text-base font-semibold text-content-heading">
-                      {feat.title}
-                    </h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-content-secondary">
-                      {feat.description}
-                    </p>
-                  </SpotlightCard>
-                </StaggerItem>
-              ))}
-            </StaggerGroup>
-
-            {/* Technical Credibility & Provenance Row */}
-            <StaggerGroup className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StaggerItem>
-                <Card muted padding="sm" className="flex h-full items-start gap-3">
-                  <ShieldCheck
-                    className="mt-0.5 h-4 w-4 shrink-0 text-primary"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className="text-xs font-semibold text-content-heading">
-                      Non-Fabricated Tailoring
-                    </p>
-                    <p className="mt-0.5 text-xs text-content-secondary">
-                      Rewrites are strictly bounded by your existing resume facts.
-                    </p>
-                  </div>
-                </Card>
-              </StaggerItem>
-
-              <StaggerItem>
-                <Card muted padding="sm" className="flex h-full items-start gap-3">
-                  <CheckCircle2
-                    className="mt-0.5 h-4 w-4 shrink-0 text-status-success"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className="text-xs font-semibold text-content-heading">
-                      Traceable Scores
-                    </p>
-                    <p className="mt-0.5 text-xs text-content-secondary">
-                      Every score lists the exact skills matched and missing.
-                    </p>
-                  </div>
-                </Card>
-              </StaggerItem>
-
-              <StaggerItem>
-                <Card muted padding="sm" className="flex h-full items-start gap-3">
-                  <Database
-                    className="mt-0.5 h-4 w-4 shrink-0 text-primary"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className="text-xs font-semibold text-content-heading">
-                      Resumable Sessions
-                    </p>
-                    <p className="mt-0.5 text-xs text-content-secondary">
-                      Pause and resume mock interviews without losing answers.
-                    </p>
-                  </div>
-                </Card>
-              </StaggerItem>
-
-              <StaggerItem>
-                <Card muted padding="sm" className="flex h-full items-start gap-3">
-                  <Code2
-                    className="mt-0.5 h-4 w-4 shrink-0 text-primary"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className="text-xs font-semibold text-content-heading">
-                      Official ATS Sources
-                    </p>
-                    <p className="mt-0.5 text-xs text-content-secondary">
-                      Direct company board links and sync timestamps on every job.
-                    </p>
-                  </div>
-                </Card>
-              </StaggerItem>
-            </StaggerGroup>
-          </ContentContainer>
-        </section>
-
-        {/* Single Final CTA */}
-        <section className="relative overflow-hidden bg-canvas py-14 sm:py-20 theme-surface-transition">
-          <AmbientBackdrop variant="subtle" />
-          <ContentContainer
-            size="md"
-            padded={false}
-            className="relative z-10 px-4 sm:px-6 lg:px-8"
-          >
-            <ScrollReveal direction="scale">
+            {/* Interactive 4-Stage Product Workspace Preview (Moved Down from Hero) */}
+            <ScrollReveal direction="up" className="lg:col-span-8">
               <Card
-                padding="lg"
-                className="border-border-strong/80 text-center shadow-elevated"
+                padding="none"
+                className="overflow-hidden rounded-2xl border-border-strong/70 shadow-elevated"
               >
-                <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                  Ready When You Are
-                </p>
-                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-content-heading sm:text-3xl">
-                  See where you stand on your target roles.
-                </h2>
-                <p className="mx-auto mt-2.5 max-w-xl text-sm leading-relaxed text-content-secondary">
-                  Upload your resume to inspect your requirement coverage on real
-                  engineering jobs and practice targeted interviews.
-                </p>
-                <div className="mt-6 flex flex-wrap justify-center gap-3">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={() => navigate(primaryDestination)}
-                    rightIcon={<ArrowRight className="h-4 w-4" />}
-                  >
-                    {isAuthenticated || user
-                      ? "Open Dashboard"
-                      : "Create your account"}
-                  </Button>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/60 px-4 py-3 sm:px-6">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="font-display text-xs font-semibold text-content-heading">
+                      Live Workspace Preview
+                    </span>
+                    <span className="font-mono text-[11px] text-content-secondary">
+                      Backend Engineer · Sample Role
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium text-content-secondary">
+                    Interactive walkthrough
+                  </span>
+                </div>
+
+                <div className="p-4 sm:p-6">
+                  <Tabs
+                    activeTab={previewTab}
+                    onChange={setPreviewTab}
+                    items={[
+                      {
+                        id: "match",
+                        label: "1. Role Match",
+                        content: (
+                          <div className="space-y-4">
+                            <Card
+                              muted
+                              padding="sm"
+                              className="flex flex-wrap items-center justify-between gap-4"
+                            >
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium text-content-secondary">
+                                  Requirement coverage
+                                </p>
+                                <p className="font-display text-base font-semibold text-content-heading">
+                                  You meet 8 of 12 requirements for this role.
+                                </p>
+                                <p className="text-xs text-content-secondary">
+                                  6 skills verified in interviews · 2 skills on
+                                  resume · 4 gaps identified
+                                </p>
+                              </div>
+                              <ScoreRing score={67} size={68} label="Match" />
+                            </Card>
+
+                            <div className="space-y-2.5">
+                              <RequirementRow
+                                skill="PostgreSQL"
+                                status="MET"
+                                evidence="Verified in technical mock interview (86/100)"
+                              />
+                              <RequirementRow
+                                skill="TypeScript & Node.js"
+                                status="PRACTICED"
+                                evidence="Matched on resume + practiced in 1 session"
+                              />
+                              <RequirementRow
+                                skill="API Authentication"
+                                status="MISSING"
+                                priority="high"
+                                frequencyLabel="Appears in 7 saved jobs"
+                              />
+                            </div>
+                          </div>
+                        ),
+                      },
+                      {
+                        id: "gaps",
+                        label: "2. Skill Gaps",
+                        content: (
+                          <div className="space-y-3">
+                            <Card muted padding="sm">
+                              <p className="text-xs font-semibold text-content-heading">
+                                Your strongest gap is API authentication. It
+                                appears in 7 of your saved jobs.
+                              </p>
+                              <p className="mt-1 text-xs text-content-secondary">
+                                Gaps are ranked by how frequently they appear
+                                across your target roles.
+                              </p>
+                            </Card>
+                            <RequirementRow
+                              skill="API Authentication (OAuth2 / JWT)"
+                              status="MISSING"
+                              priority="high"
+                              evidence="Required in 7 of 9 saved backend roles"
+                            />
+                            <RequirementRow
+                              skill="Redis Distributed Caching"
+                              status="WEAK"
+                              priority="high"
+                              evidence="Scored 48/100 in last interview — needs practice"
+                            />
+                            <RequirementRow
+                              skill="Rate Limiting & Backpressure"
+                              status="MISSING"
+                              priority="medium"
+                              evidence="Required in 4 of 9 saved backend roles"
+                            />
+                          </div>
+                        ),
+                      },
+                      {
+                        id: "interview",
+                        label: "3. Evaluation",
+                        content: (
+                          <div className="grid gap-4 md:grid-cols-12 md:items-center">
+                            <div className="md:col-span-5">
+                              <RadarCompetencyChart
+                                data={PREVIEW_EVAL_RADAR}
+                                size={224}
+                                title="Rubric"
+                              />
+                            </div>
+                            <div className="md:col-span-7">
+                              <FeedbackCard
+                                title="Question 2 Evaluation · API Authentication"
+                                score={84}
+                                summary="Clear explanation of short-lived access tokens paired with rotating refresh tokens and revocation lists."
+                                strengths={[
+                                  "Explained token rotation and replay detection clearly.",
+                                  "Addressed stateless vs. stateful revocation trade-offs.",
+                                ]}
+                                improvements={[
+                                  "Specify cookie security flags (HttpOnly, SameSite, Secure) when storing refresh tokens.",
+                                ]}
+                              />
+                            </div>
+                          </div>
+                        ),
+                      },
+                      {
+                        id: "profile",
+                        label: "4. Skill Profile",
+                        content: (
+                          <div className="space-y-4">
+                            <Card muted padding="sm">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-semibold text-content-heading">
+                                    Your readiness improved by 6 points after
+                                    your last interview.
+                                  </p>
+                                  <p className="text-xs text-content-secondary">
+                                    API Authentication moved from Missing to
+                                    Practiced.
+                                  </p>
+                                </div>
+                                <Badge tone="success">+6 pts</Badge>
+                              </div>
+                            </Card>
+
+                            <Card padding="sm" className="bg-canvas/50">
+                              <AreaTrendChart
+                                data={PREVIEW_READINESS_TREND}
+                                height={132}
+                                title="Readiness progression"
+                              />
+                            </Card>
+
+                            <div className="space-y-2.5">
+                              <ProgressBar
+                                label="Backend APIs & Auth"
+                                value={84}
+                                tone="success"
+                              />
+                              <ProgressBar
+                                label="Relational Databases"
+                                value={78}
+                                tone="primary"
+                              />
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 pt-0.5">
+                              <SkillBadge
+                                skill="PostgreSQL"
+                                level="VERIFIED"
+                              />
+                              <SkillBadge
+                                skill="API Authentication"
+                                level="PRACTICED"
+                              />
+                              <SkillBadge
+                                skill="TypeScript"
+                                level="VERIFIED"
+                              />
+                              <SkillBadge skill="Redis Caching" level="WEAK" />
+                            </div>
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
                 </div>
               </Card>
             </ScrollReveal>
-          </ContentContainer>
-        </section>
-      </main>
+          </div>
+        </ContentContainer>
+      </section>
 
-      <footer className="border-t border-border bg-canvas py-8 theme-surface-transition">
+      {/* How It Works — Clean Editorial Rhythm, Zero AI Kickers */}
+      <section
+        id="how-it-works"
+        className="scroll-mt-24 py-14 sm:py-20 lg:py-24"
+      >
         <ContentContainer
           size="xl"
           padded={false}
-          className="flex flex-wrap items-center justify-between gap-4 px-4 text-xs text-content-secondary sm:px-6 lg:px-8"
+          className="px-5 sm:px-8 lg:px-12"
         >
-          <span className="font-medium text-content-body">
-            TrueHire · Job Discovery & Interview Readiness
-          </span>
-          <div className="flex flex-wrap items-center gap-5">
-            <ThemeToggle variant="segmented" />
-            <Link
-              to="/jobs"
-              className="transition-colors hover:text-content-heading"
-            >
-              Explore Jobs
-            </Link>
-            <Link
-              to="/login"
-              className="transition-colors hover:text-content-heading"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/register"
-              className="transition-colors hover:text-content-heading"
-            >
-              Create account
-            </Link>
-          </div>
+          <ScrollReveal direction="up" className="max-w-2xl space-y-3">
+            <h2 className="font-display text-2xl font-bold tracking-[-0.025em] text-content-heading sm:text-3xl lg:text-[2.15rem] lg:leading-[1.12]">
+              Four steps from resume upload to verified readiness.
+            </h2>
+            <p className="text-sm leading-relaxed text-content-secondary sm:text-[15px]">
+              A straightforward workflow built for engineers preparing for
+              specific roles—without guesswork or inflated percentages.
+            </p>
+          </ScrollReveal>
+
+          <StaggerGroup className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {WORKFLOW_STEPS.map((item, idx) => (
+              <StaggerItem
+                key={item.number}
+                direction={idx % 2 === 0 ? "up" : "scale"}
+                className="h-full"
+              >
+                <SpotlightCard
+                  padding="md"
+                  className="h-full rounded-2xl border-border/80"
+                >
+                  <span className="font-mono text-xs font-medium text-content-secondary tabular-nums">
+                    {item.number}
+                  </span>
+                  <h3 className="mt-4 font-display text-[17px] font-semibold tracking-tight text-content-heading">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-content-secondary">
+                    {item.description}
+                  </p>
+                </SpotlightCard>
+              </StaggerItem>
+            ))}
+          </StaggerGroup>
         </ContentContainer>
-      </footer>
-    </div>
+      </section>
+
+      {/* Core Capabilities — Seamless Continuous Flow */}
+      <section id="features" className="scroll-mt-24 py-14 sm:py-20 lg:py-24">
+        <ContentContainer
+          size="xl"
+          padded={false}
+          className="px-5 sm:px-8 lg:px-12"
+        >
+          <ScrollReveal direction="up" className="max-w-2xl space-y-3">
+            <h2 className="font-display text-2xl font-bold tracking-[-0.025em] text-content-heading sm:text-3xl lg:text-[2.15rem] lg:leading-[1.12]">
+              Built for practical engineering preparation.
+            </h2>
+            <p className="text-sm leading-relaxed text-content-secondary sm:text-[15px]">
+              Transparent matching, source-verified job postings, and
+              non-fabricated resume tailoring.
+            </p>
+          </ScrollReveal>
+
+          <StaggerGroup className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {CORE_FEATURES.map((feat, idx) => (
+              <StaggerItem
+                key={feat.title}
+                direction={
+                  idx % 3 === 0 ? "left" : idx % 3 === 2 ? "right" : "up"
+                }
+                className="h-full"
+              >
+                <SpotlightCard
+                  padding="md"
+                  className="group h-full rounded-2xl border-border/80"
+                >
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted/70 transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary-soft">
+                    {feat.icon}
+                  </div>
+                  <h3 className="mt-4 font-display text-[17px] font-semibold tracking-tight text-content-heading">
+                    {feat.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-content-secondary">
+                    {feat.description}
+                  </p>
+                </SpotlightCard>
+              </StaggerItem>
+            ))}
+          </StaggerGroup>
+
+          {/* Technical Provenance Row */}
+          <StaggerGroup className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StaggerItem>
+              <Card
+                muted
+                padding="sm"
+                className="flex h-full items-start gap-3 rounded-xl"
+              >
+                <ShieldCheck
+                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-xs font-semibold text-content-heading">
+                    Non-Fabricated Tailoring
+                  </p>
+                  <p className="mt-0.5 text-xs text-content-secondary">
+                    Rewrites are strictly bounded by your existing resume facts.
+                  </p>
+                </div>
+              </Card>
+            </StaggerItem>
+
+            <StaggerItem>
+              <Card
+                muted
+                padding="sm"
+                className="flex h-full items-start gap-3 rounded-xl"
+              >
+                <CheckCircle2
+                  className="mt-0.5 h-4 w-4 shrink-0 text-status-success"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-xs font-semibold text-content-heading">
+                    Traceable Scores
+                  </p>
+                  <p className="mt-0.5 text-xs text-content-secondary">
+                    Every score lists the exact skills matched and missing.
+                  </p>
+                </div>
+              </Card>
+            </StaggerItem>
+
+            <StaggerItem>
+              <Card
+                muted
+                padding="sm"
+                className="flex h-full items-start gap-3 rounded-xl"
+              >
+                <Database
+                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-xs font-semibold text-content-heading">
+                    Resumable Sessions
+                  </p>
+                  <p className="mt-0.5 text-xs text-content-secondary">
+                    Pause and resume mock interviews without losing answers.
+                  </p>
+                </div>
+              </Card>
+            </StaggerItem>
+
+            <StaggerItem>
+              <Card
+                muted
+                padding="sm"
+                className="flex h-full items-start gap-3 rounded-xl"
+              >
+                <Code2
+                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-xs font-semibold text-content-heading">
+                    Official ATS Sources
+                  </p>
+                  <p className="mt-0.5 text-xs text-content-secondary">
+                    Direct company board links and sync timestamps on every job.
+                  </p>
+                </div>
+              </Card>
+            </StaggerItem>
+          </StaggerGroup>
+        </ContentContainer>
+      </section>
+
+      {/* Final Call to Action — Clean Elevated Card, No AI Eyebrow */}
+      <section className="relative py-12 sm:py-16 lg:py-20">
+        <AmbientBackdrop variant="subtle" />
+        <ContentContainer
+          size="md"
+          padded={false}
+          className="relative z-10 px-5 sm:px-8 lg:px-12"
+        >
+          <ScrollReveal direction="scale">
+            <Card
+              padding="lg"
+              className="rounded-2xl border-border-strong/70 text-center shadow-elevated"
+            >
+              <h2 className="font-display text-2xl font-bold tracking-[-0.025em] text-content-heading sm:text-3xl">
+                See where you stand on your target roles.
+              </h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-content-secondary sm:text-[15px]">
+                Upload your resume to inspect your requirement coverage on real
+                engineering jobs and practice targeted interviews.
+              </p>
+              <div className="mt-7 flex flex-wrap justify-center gap-3">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate(primaryDestination)}
+                  className="!rounded-full px-6"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  {isAuthenticated || user
+                    ? "Open Dashboard"
+                    : "Create your account"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => navigate("/support")}
+                  className="!rounded-full px-5"
+                >
+                  Contact support
+                </Button>
+              </div>
+            </Card>
+          </ScrollReveal>
+        </ContentContainer>
+      </section>
+    </MarketingShell>
   );
 };
 
