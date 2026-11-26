@@ -78,7 +78,7 @@ TrueHire intentionally keeps critical scoring paths deterministic and reserves L
 
 ## Frontend Architecture (`client/src/`)
 
-The client is a Vite + React 18 SPA organized by product domain (`src/features/`), with route-level `React.lazy` code splitting and manual Rollup vendor chunks (`react-vendor`, `query-vendor`, `motion-vendor`, `icons-vendor`, `sentry-vendor`) in `client/vite.config.ts`.
+The client is a Vite + React 18 SPA organized by product domain (`src/features/`), with route-level `React.lazy` code splitting and manual Rollup vendor chunks (`react-vendor`, `query-vendor`, `motion-vendor`, `icons-vendor`, `three-vendor`, `sentry-vendor`) configured in `client/vite.config.ts`.
 
 ```text
 client/src/
@@ -87,29 +87,32 @@ client/src/
 │   ├── ErrorBoundary.tsx    # Top-level crash recovery
 │   ├── layout/              # AppShell (workspace/auth/minimal), Sidebar, TopNav, MobileNav, CommandPalette (Cmd/Ctrl+K)
 │   └── ui/                  # Shared primitives, Charts, ThemeToggle, MotionPrimitives, SmoothScrollProvider
-├── context/                 # ThemeContext, ToastContext
+├── context/                 # ThemeContext (dark / swiss), ToastContext
 ├── features/
 │   ├── admin/               # Admin Operations Console (/admin)
 │   ├── auth/                # AuthContext, Login/Register, OnboardingWizard, Profile
 │   ├── dashboard/           # Candidate readiness overview (/dashboard)
 │   ├── interview/           # List, Prep, Live Interview, Evaluation + Markdown export (/interviews/*)
 │   ├── jobs/                # ATS job explorer & saved jobs (/jobs, /saved-jobs)
-│   ├── landing/             # Public landing page (/)
+│   ├── landing/             # LandingPage (/), MarketingShell, lazy Three.js WebGL hero3d/ showcase + closedLoop3d/ gating & static fallback
 │   ├── matching/            # Match breakdown & skill-gap what-if simulator (/matches/:jobId, /skill-gaps/:jobId)
 │   ├── ontology/            # Ontology coverage, audits & admin review queue (/ontology)
 │   ├── radar/               # Role-Fit Radar 5-bucket view (/radar)
 │   ├── readiness/           # Skill ledger & proof submission (/readiness, /skills)
 │   ├── resume/              # File upload, paste, parsed preview & inline section editor (/resume)
+│   ├── support/             # Public Support & Contact form (/support, /contact) using MarketingShell
 │   ├── tailoring/           # Evidence-bounded tailoring workbench (/tailor/:jobId)
 │   └── tracker/             # Application pipeline tracker (/applications)
 ├── lib/                     # api-client.ts, sanitize.ts, chartMath.ts, theme.ts, toast.ts, sentry.ts
 └── services/                # authApi.ts
 ```
 
-### Client Security & Resilience
+### Client Security, Theming & Progressive Enhancement
 
 - **Token lifecycle (`client/src/lib/api-client.ts`):** Injects `Authorization: Bearer <token>`, deduplicates concurrent 401 refresh calls via a shared `refreshPromise`, retries once with the rotated access token, and clears storage + dispatches `truehire:unauthorized` on refresh failure.
 - **Untrusted content sanitization (`client/src/lib/sanitize.ts`):** External job HTML is filtered through an allowlist sanitizer before rendering, and external links are validated against `http:`/`https:`.
+- **Dual-theme system (`client/index.html`, `ThemeContext.tsx`):** Supports `dark` (default) and `swiss` light mode persisted in `localStorage["truehire_theme"]` via an inline pre-paint script in `index.html`.
+- **Progressive WebGL 3D showcase (`hero3d/`, `closedLoop3d/`):** The landing hero renders a lazy-loaded Three.js architectural stack (`HeroStackCanvas3D` in the isolated `three-vendor` bundle). `shouldRenderWebGL3D()` gates WebGL on capability probes, `prefers-reduced-motion`, and context loss, falling back automatically (via `SceneErrorBoundary`) to the accessible `StaticHeroStackDiagram`.
 
 ---
 

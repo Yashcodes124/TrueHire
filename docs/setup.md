@@ -174,9 +174,9 @@ Server variables are validated at startup by `server/src/config/env.ts` (empty s
 | `npm run build:server` / `npm run build:client` | Builds backend or frontend individually. |
 | `npm run lint` | Runs TypeScript builds across both workspaces. |
 | `npm start` | Starts compiled backend (`node server/dist/index.js`). |
-| `npm run test:server` | Runs backend Vitest suite (`server/src/__tests__/`). |
-| `npm run test:client` | Runs frontend Vitest unit tests (`client/src/__tests__/`). |
-| `npm run test:e2e` | Runs Playwright E2E suite (`client/tests/e2e/`). |
+| `npm run test:server` | Runs backend Vitest suite (15 files in `server/src/__tests__/`). |
+| `npm run test:client` | Runs frontend Vitest unit tests (7 files in `client/src/__tests__/`, including 3D scene model tests). |
+| `npm run test:e2e` | Runs Playwright E2E suite (7 specs in `client/tests/e2e/`). |
 
 ### Workspace-Specific Scripts
 
