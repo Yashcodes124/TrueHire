@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { Suspense, lazy, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -6,15 +6,9 @@ import {
   Award,
   Briefcase,
   CheckCircle2,
-  Clock,
-  FileText,
   Target,
-  AlertTriangle,
-  ShieldCheck,
-  TrendingUp,
 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
-import { ReadinessPanel } from "../readiness/ReadinessPanel";
 import { useReadiness } from "../readiness/useReadiness";
 import type { ReadinessSkill } from "../readiness/readinessApi";
 import { useResumes } from "../resume/useResumes";
@@ -23,17 +17,32 @@ import type { Application } from "../tracker/types";
 import { fetchJobs } from "../jobs/jobsApi";
 import { ContentContainer, PageHeader } from "../../components/layout";
 import {
-  Badge,
   Button,
   Card,
-  DonutDistributionChart,
   ErrorState,
-  JobCard,
-  RequirementRow,
-  SectionCard,
-  SegmentedBarChart,
   Skeleton,
-} from "../../components/ui";
+} from "../../components/ui/Primitives";
+
+const ReadinessPanel = lazy(() =>
+  import("../readiness/ReadinessPanel").then((m) => ({
+    default: m.ReadinessPanel,
+  })),
+);
+const DashboardSkillProfileHub = lazy(() =>
+  import("./DashboardSkillProfileHub").then((m) => ({
+    default: m.DashboardSkillProfileHub,
+  })),
+);
+const DashboardAnalyticsCharts = lazy(() =>
+  import("./DashboardAnalyticsCharts").then((m) => ({
+    default: m.DashboardAnalyticsCharts,
+  })),
+);
+const DashboardActivitySection = lazy(() =>
+  import("./DashboardActivitySection").then((m) => ({
+    default: m.DashboardActivitySection,
+  })),
+);
 
 interface JobSummary {
   id: string;
@@ -44,6 +53,79 @@ interface JobSummary {
   skills?: string[];
   externalUrl?: string | null;
 }
+
+const ReadinessPanelFallback: React.FC = () => (
+  <Card padding="md" className="space-y-4" aria-busy="true">
+    <div className="flex items-center justify-between">
+      <Skeleton className="h-4 w-40" />
+      <Skeleton className="h-6 w-28" />
+    </div>
+    <Skeleton className="h-20 w-full" />
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+  </Card>
+);
+
+const SkillProfileHubFallback: React.FC = () => (
+  <Card padding="md" className="space-y-5" aria-busy="true">
+    <div className="space-y-2">
+      <Skeleton className="h-3.5 w-44" />
+      <Skeleton className="h-6 w-72" />
+    </div>
+    <div className="grid gap-2.5 sm:grid-cols-5">
+      {Array.from({ length: 5 }).map((_, idx) => (
+        <Skeleton key={idx} className="h-16 w-full" />
+      ))}
+    </div>
+    <div className="grid gap-4 md:grid-cols-2">
+      {Array.from({ length: 4 }).map((_, idx) => (
+        <Skeleton key={idx} className="h-36 w-full" />
+      ))}
+    </div>
+  </Card>
+);
+
+const AnalyticsChartsFallback: React.FC = () => (
+  <div className="grid gap-6 lg:grid-cols-12" aria-busy="true">
+    <Card padding="md" className="space-y-4 lg:col-span-6">
+      <Skeleton className="h-5 w-44" />
+      <Skeleton className="h-48 w-full" />
+    </Card>
+    <Card padding="md" className="space-y-4 lg:col-span-6">
+      <Skeleton className="h-5 w-44" />
+      <Skeleton className="h-48 w-full" />
+    </Card>
+  </div>
+);
+
+const ActivitySectionFallback: React.FC = () => (
+  <div className="space-y-6" aria-busy="true">
+    <div className="grid gap-6 lg:grid-cols-12">
+      <Card padding="md" className="space-y-3 lg:col-span-6">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </Card>
+      <Card padding="md" className="space-y-3 lg:col-span-6">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </Card>
+    </div>
+    <div className="grid gap-6 lg:grid-cols-12">
+      <Card padding="md" className="space-y-3 lg:col-span-8">
+        <Skeleton className="h-5 w-36" />
+        <Skeleton className="h-32 w-full" />
+      </Card>
+      <Card padding="md" className="space-y-3 lg:col-span-4">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-32 w-full" />
+      </Card>
+    </div>
+  </div>
+);
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -105,6 +187,7 @@ export const DashboardPage: React.FC = () => {
       extractedSkills,
     };
   }, [readiness, applications, latestResume]);
+
   const skillProfileBuckets = useMemo(() => {
     const verifiedStrengths = (readiness?.skills ?? []).filter(
       (s: ReadinessSkill) => s.status === "STRONG",
@@ -375,7 +458,7 @@ export const DashboardPage: React.FC = () => {
       value: `${metrics.activePipeline}`,
       explanation:
         metrics.activePipeline > 0
-          ? `Roles currently tracked across Saved, Applied, and Interviewing.`
+          ? "Roles currently tracked across Saved, Applied, and Interviewing."
           : "Save and match engineering roles to track your pipeline.",
       actionLabel:
         metrics.activePipeline > 0 ? "Open pipeline tracker" : "Explore jobs",
@@ -428,285 +511,23 @@ export const DashboardPage: React.FC = () => {
         />
       )}
 
-      {/* 2. Lead With Next Best Action */}
-      <ReadinessPanel />
+      {/* 2. Lead With Next Best Action (Lazy-loaded) */}
+      <Suspense fallback={<ReadinessPanelFallback />}>
+        <ReadinessPanel />
+      </Suspense>
 
-      {/* 2B. Visible Closed Loop + 4-Quadrant Verified Skill Profile Hub */}
-      <SectionCard
-        eyebrow="Closed-Loop Verification Engine"
-        title="Verified Skill Profile & Match Improvement Potential"
-        description="TrueHire updates your profile after every interview so your next job match reflects verified capability rather than unvalidated keywords."
-        action={
-          <div className="flex flex-wrap items-center gap-2">
-            {readiness?.matchImprovement &&
-              readiness.matchImprovement.trackedJobsCount > 0 && (
-                <Badge tone="success" size="sm">
-                  Match potential:{" "}
-                  {readiness.matchImprovement.currentAvgMatchPct}% →{" "}
-                  {readiness.matchImprovement.projectedAvgMatchPct}% (+
-                  {readiness.matchImprovement.potentialGainPct}%)
-                </Badge>
-              )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/readiness")}
-            >
-              Inspect interview history per skill
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-5">
-          {/* Closed-Loop Stepper */}
-          <div className="grid gap-2.5 sm:grid-cols-5">
-            {[
-              {
-                step: "1. Resume Claims",
-                value: `${latestResume?.skills.length ?? 0} listed`,
-                note: latestResume
-                  ? latestResume.fileName || latestResume.title
-                  : "Upload resume",
-                tone: "neutral" as const,
-              },
-              {
-                step: "2. Interviews",
-                value: `${(readiness?.skills ?? []).length} tested`,
-                note: "Rubric-scored Q&A",
-                tone: "primary" as const,
-              },
-              {
-                step: "3. Evidence",
-                value: `${skillProfileBuckets.verifiedStrengths.length} strong`,
-                note: `${skillProfileBuckets.interviewWeaknesses.length} weak exposed`,
-                tone: "success" as const,
-              },
-              {
-                step: "4. Updated Profile",
-                value: `${metrics.readinessScore}% ready`,
-                note: "Weak claims withheld",
-                tone: "primary" as const,
-              },
-              {
-                step: "5. Better Next Match",
-                value:
-                  readiness?.matchImprovement &&
-                  readiness.matchImprovement.potentialGainPct > 0
-                    ? `+${readiness.matchImprovement.potentialGainPct}% gain`
-                    : "Live sync",
-                note: readiness?.matchImprovement?.topUnlockSkill
-                  ? `Top target: ${readiness.matchImprovement.topUnlockSkill}`
-                  : "Explore roles",
-                tone: "success" as const,
-              },
-            ].map((stage) => (
-              <Card key={stage.step} muted padding="sm" className="space-y-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] font-semibold text-content-secondary">
-                    {stage.step}
-                  </span>
-                  <Badge tone={stage.tone} size="sm">
-                    {stage.value}
-                  </Badge>
-                </div>
-                <p className="truncate text-xs text-content-heading font-medium">
-                  {stage.note}
-                </p>
-              </Card>
-            ))}
-          </div>
+      {/* 2B. Closed-Loop Verified Skill Profile Hub (Lazy-loaded) */}
+      <Suspense fallback={<SkillProfileHubFallback />}>
+        <DashboardSkillProfileHub
+          readiness={readiness}
+          latestResume={latestResume}
+          readinessScore={metrics.readinessScore}
+          skillProfileBuckets={skillProfileBuckets}
+          prioritySkillGaps={prioritySkillGaps}
+        />
+      </Suspense>
 
-          {/* 4 Quadrants: Verified Strengths | Interview Weaknesses | Resume-Only Claims | Critical Missing Skills */}
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Quadrant 1: Verified Strengths */}
-            <Card padding="sm" className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-success">
-                  <ShieldCheck className="h-4 w-4" />
-                  Verified Strengths (
-                  {skillProfileBuckets.verifiedStrengths.length})
-                </span>
-                <span className="text-[11px] text-content-secondary">
-                  Interview-proven
-                </span>
-              </div>
-              {skillProfileBuckets.verifiedStrengths.length === 0 ? (
-                <p className="text-xs text-content-secondary">
-                  No interview-verified strengths yet. Complete a targeted
-                  interview to prove your top resume skills.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {skillProfileBuckets.verifiedStrengths
-                    .slice(0, 4)
-                    .map((s) => (
-                      <li
-                        key={s.skill}
-                        className="rounded-input border border-border bg-muted/40 p-2.5 text-xs"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <strong className="font-semibold text-content-heading">
-                            {s.skill}
-                          </strong>
-                          <span className="text-[11px] text-content-secondary tabular-nums">
-                            {new Date(s.updatedAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="mt-0.5 line-clamp-1 text-content-secondary">
-                          {s.evidence}
-                        </p>
-                      </li>
-                    ))}
-                </ul>
-              )}
-            </Card>
-
-            {/* Quadrant 2: Interview-Identified Weaknesses */}
-            <Card padding="sm" className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-warning">
-                  <AlertTriangle className="h-4 w-4" />
-                  Interview-Identified Weaknesses (
-                  {skillProfileBuckets.interviewWeaknesses.length})
-                </span>
-                <span className="text-[11px] text-content-secondary">
-                  Credit withheld
-                </span>
-              </div>
-              {skillProfileBuckets.interviewWeaknesses.length === 0 ? (
-                <p className="text-xs text-content-secondary">
-                  Zero skills currently flagged weak in mock interviews.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {skillProfileBuckets.interviewWeaknesses
-                    .slice(0, 4)
-                    .map((s) => (
-                      <li
-                        key={s.skill}
-                        className="flex items-center justify-between gap-2 rounded-input border border-border bg-muted/40 p-2.5 text-xs"
-                      >
-                        <div className="min-w-0">
-                          <strong className="font-semibold text-content-heading">
-                            {s.skill}
-                          </strong>
-                          <p className="truncate text-content-secondary">
-                            {s.evidence} ·{" "}
-                            {new Date(s.updatedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate("/jobs")}
-                        >
-                          Re-verify
-                        </Button>
-                      </li>
-                    ))}
-                </ul>
-              )}
-            </Card>
-
-            {/* Quadrant 3: Resume-Only Claims */}
-            <Card padding="sm" className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
-                  <FileText className="h-4 w-4" />
-                  Resume-Only Claims (
-                  {skillProfileBuckets.resumeOnlyClaims.length})
-                </span>
-                <span className="text-[11px] text-content-secondary">
-                  {latestResume
-                    ? `Uploaded ${new Date(latestResume.createdAt).toLocaleDateString()}`
-                    : "Unvalidated"}
-                </span>
-              </div>
-              {skillProfileBuckets.resumeOnlyClaims.length === 0 ? (
-                <p className="text-xs text-content-secondary">
-                  {latestResume
-                    ? "All extracted resume skills have been evaluated!"
-                    : "Upload a resume to extract your initial skill claims."}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-1.5">
-                    {skillProfileBuckets.resumeOnlyClaims
-                      .slice(0, 10)
-                      .map((skill) => (
-                        <Badge key={skill} tone="neutral" size="sm">
-                          {skill}
-                        </Badge>
-                      ))}
-                    {skillProfileBuckets.resumeOnlyClaims.length > 10 && (
-                      <Badge tone="neutral" size="sm">
-                        +{skillProfileBuckets.resumeOnlyClaims.length - 10} more
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-content-secondary">
-                    Listed on your resume but not yet verified in an interview.
-                  </p>
-                </div>
-              )}
-            </Card>
-
-            {/* Quadrant 4: Critical Missing Skills & Match Improvement Potential */}
-            <Card padding="sm" className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-danger">
-                  <TrendingUp className="h-4 w-4" />
-                  Critical Missing Skills ({prioritySkillGaps.length})
-                </span>
-                <span className="text-[11px] text-content-secondary">
-                  Highest match upside
-                </span>
-              </div>
-              {prioritySkillGaps.length === 0 ? (
-                <p className="text-xs text-content-secondary">
-                  Match with a role to surface critical missing skills and
-                  projected score gains.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {prioritySkillGaps.slice(0, 4).map((gap) => (
-                    <li
-                      key={gap.skill}
-                      className="flex items-center justify-between gap-2 rounded-input border border-border bg-muted/40 p-2.5 text-xs"
-                    >
-                      <div className="min-w-0">
-                        <strong className="font-semibold text-content-heading">
-                          {gap.skill}
-                        </strong>
-                        <p className="truncate text-content-secondary">
-                          Required in {gap.count}{" "}
-                          {gap.count === 1 ? "role" : "roles"} · +8–15% match
-                          potential
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          navigate(
-                            gap.sampleJobId
-                              ? `/skill-gaps/${gap.sampleJobId}?focusSkill=${encodeURIComponent(gap.skill)}`
-                              : "/jobs",
-                          )
-                        }
-                      >
-                        Close gap
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* 3. Actionable Readiness Metrics (Label + Value + Explanation + Action) */}
+      {/* 3. Actionable Readiness Metrics (Immediate lightweight KPI row) */}
       <section
         aria-label="Readiness overview metrics"
         className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
@@ -748,7 +569,7 @@ export const DashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate(item.to)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+                className="inline-flex items-center gap-1 rounded-sm text-xs font-semibold text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <span>{item.actionLabel}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -758,342 +579,29 @@ export const DashboardPage: React.FC = () => {
         ))}
       </section>
 
-      {/* 3B. Visual Readiness Distribution & Pipeline Funnel */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-6">
-          <SectionCard
-            eyebrow="Skill Verification Breakdown"
-            title="Evidence Composition"
-            description="Balance between interview-verified strengths, unvalidated resume claims, and priority gaps."
-            loading={metricsLoading}
-          >
-            <DonutDistributionChart
-              data={skillEvidenceDonut}
-              centerValue={`${metrics.readinessScore}%`}
-              centerLabel="Readiness"
-            />
-          </SectionCard>
-        </div>
+      {/* 3B. Visual Readiness Distribution & Pipeline Funnel Charts (Lazy-loaded) */}
+      <Suspense fallback={<AnalyticsChartsFallback />}>
+        <DashboardAnalyticsCharts
+          skillEvidenceDonut={skillEvidenceDonut}
+          pipelineFunnelData={pipelineFunnelData}
+          readinessScore={metrics.readinessScore}
+          metricsLoading={metricsLoading}
+          appsLoading={appsLoading}
+        />
+      </Suspense>
 
-        <div className="lg:col-span-6">
-          <SectionCard
-            eyebrow="Pipeline Velocity"
-            title="Application Funnel"
-            description="Distribution of your tracked engineering roles across hiring stages."
-            loading={appsLoading}
-            action={
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/applications")}
-              >
-                Open tracker
-              </Button>
-            }
-          >
-            <SegmentedBarChart
-              items={pipelineFunnelData}
-              valueSuffix=" roles"
-            />
-          </SectionCard>
-        </div>
-      </div>
-
-      {/* 4. Priority Skill Gaps & Recommended Jobs */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Left 6 cols: Priority Skill Gaps */}
-        <div className="lg:col-span-6">
-          <SectionCard
-            eyebrow="Gap Prioritization"
-            title="Priority Skill Gaps"
-            description="Skills flagged in mock interviews or missing across your tracked roles."
-            loading={metricsLoading}
-            empty={prioritySkillGaps.length === 0}
-            emptyTitle="No skill gaps identified yet"
-            emptyDescription="Compare your resume with a verified job posting to rank missing skills by role frequency."
-            emptyAction={
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => navigate("/jobs")}
-              >
-                Compare with a job
-              </Button>
-            }
-            action={
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/skills")}
-              >
-                All skills
-              </Button>
-            }
-          >
-            <div className="space-y-2.5">
-              {prioritySkillGaps.map((gap) => (
-                <RequirementRow
-                  key={gap.skill}
-                  skill={gap.skill}
-                  status={gap.isWeak ? "WEAK" : "MISSING"}
-                  priority={gap.isWeak || gap.count >= 2 ? "high" : "medium"}
-                  frequencyLabel={`Appears in ${gap.count} ${
-                    gap.count === 1 ? "role" : "roles"
-                  }`}
-                  evidence={
-                    gap.isWeak
-                      ? "Flagged in mock interview — practice to convert to Verified"
-                      : "Missing from your active resume profile"
-                  }
-                  action={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        navigate(
-                          gap.sampleJobId
-                            ? `/skill-gaps/${gap.sampleJobId}${
-                                latestResume
-                                  ? `?resumeId=${latestResume.id}`
-                                  : ""
-                              }`
-                            : "/jobs",
-                        )
-                      }
-                    >
-                      Practice this skill
-                    </Button>
-                  }
-                />
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-
-        {/* Right 6 cols: Recommended Jobs */}
-        <div className="lg:col-span-6">
-          <SectionCard
-            eyebrow="Role Discovery"
-            title="Recommended Jobs"
-            description="Verified roles matched against your current skill profile."
-            loading={appsLoading}
-            empty={recommendedJobs.length === 0}
-            emptyTitle="No recommended jobs yet"
-            emptyDescription="Browse the verified job directory to inspect requirement coverage and missing skills."
-            emptyAction={
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => navigate("/jobs")}
-              >
-                Explore verified jobs
-              </Button>
-            }
-            action={
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/jobs")}
-              >
-                Browse all
-              </Button>
-            }
-          >
-            <div className="space-y-3">
-              {recommendedJobs.map((job) => (
-                <JobCard
-                  key={job.id}
-                  id={job.id}
-                  title={job.title}
-                  company={job.company}
-                  location={job.location}
-                  source={job.source}
-                  matchScore={job.matchScore}
-                  appliedStatus={job.status}
-                  skills={
-                    job.missingSkills.length > 0
-                      ? job.missingSkills.map((s: string) => `Missing: ${s}`)
-                      : ["All listed skills matched"]
-                  }
-                  onSelect={() =>
-                    navigate(
-                      `/matches/${job.id}${
-                        latestResume ? `?resumeId=${latestResume.id}` : ""
-                      }`,
-                    )
-                  }
-                  actions={
-                    <>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() =>
-                          navigate(
-                            `/matches/${job.id}${
-                              latestResume ? `?resumeId=${latestResume.id}` : ""
-                            }`,
-                          )
-                        }
-                      >
-                        View match
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          navigate(
-                            `/skill-gaps/${job.id}${
-                              latestResume ? `?resumeId=${latestResume.id}` : ""
-                            }`,
-                          )
-                        }
-                      >
-                        Skill gaps
-                      </Button>
-                    </>
-                  }
-                />
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-      </div>
-
-      {/* 5. Recent Activity & Active Resume Status */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Recent Activity (8 cols) */}
-        <div className="lg:col-span-8">
-          <SectionCard
-            eyebrow="Closed-Loop Log"
-            title="Recent Activity"
-            description="Latest updates across your resumes, job matches, and interview evaluations."
-            loading={metricsLoading}
-            empty={recentActivity.length === 0}
-            emptyTitle="No activity recorded yet"
-            emptyDescription="Upload a resume or match with a role to start building your readiness history."
-            emptyAction={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/resume")}
-              >
-                Upload resume
-              </Button>
-            }
-          >
-            <ul className="divide-y divide-border">
-              {recentActivity.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex flex-wrap items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0"
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone={item.tone} size="sm">
-                        {item.typeLabel}
-                      </Badge>
-                      <span className="text-sm font-semibold text-content-heading truncate">
-                        {item.title}
-                      </span>
-                    </div>
-                    <p className="text-xs text-content-secondary">
-                      {item.detail}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="inline-flex items-center gap-1 text-xs text-content-secondary tabular-nums">
-                      <Clock className="h-3.5 w-3.5" />
-                      {new Date(item.date).toLocaleDateString()}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(item.to)}
-                    >
-                      {item.actionLabel}
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-        </div>
-
-        {/* Active Resume Baseline (4 cols) */}
-        <div className="lg:col-span-4">
-          <SectionCard
-            eyebrow="Matching Source"
-            title="Active Resume"
-            description="Used to compute requirement coverage."
-            loading={resumesLoading}
-            empty={!latestResume}
-            emptyTitle="No resume uploaded"
-            emptyDescription="Upload a PDF or DOCX resume to extract your skills and run deterministic job matches."
-            emptyAction={
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => navigate("/resume")}
-              >
-                Upload resume
-              </Button>
-            }
-            action={
-              latestResume ? (
-                <Badge tone="success" size="sm">
-                  Active
-                </Badge>
-              ) : undefined
-            }
-          >
-            {latestResume && (
-              <div className="space-y-4">
-                <Card muted padding="sm" className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 shrink-0 text-primary" />
-                    <p className="truncate text-sm font-semibold text-content-heading">
-                      {latestResume.fileName ?? latestResume.title}
-                    </p>
-                  </div>
-                  <p className="text-xs text-content-secondary tabular-nums">
-                    Uploaded{" "}
-                    {new Date(latestResume.createdAt).toLocaleDateString()} ·{" "}
-                    {latestResume.skills.length} skills extracted
-                  </p>
-                </Card>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-content-secondary">
-                    Extracted skills sample
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {latestResume.skills.slice(0, 8).map((skill: string) => (
-                      <Badge key={skill} tone="neutral" size="sm">
-                        {skill}
-                      </Badge>
-                    ))}
-                    {latestResume.skills.length > 8 && (
-                      <Badge tone="neutral" size="sm">
-                        +{latestResume.skills.length - 8} more
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  fullWidth
-                  onClick={() => navigate("/resume")}
-                >
-                  Manage or replace resume
-                </Button>
-              </div>
-            )}
-          </SectionCard>
-        </div>
-      </div>
+      {/* 4 & 5. Priority Skill Gaps, Recommended Jobs, Recent Activity & Active Resume (Lazy-loaded) */}
+      <Suspense fallback={<ActivitySectionFallback />}>
+        <DashboardActivitySection
+          prioritySkillGaps={prioritySkillGaps}
+          recommendedJobs={recommendedJobs}
+          recentActivity={recentActivity}
+          latestResume={latestResume}
+          metricsLoading={metricsLoading}
+          appsLoading={appsLoading}
+          resumesLoading={resumesLoading}
+        />
+      </Suspense>
     </ContentContainer>
   );
 };

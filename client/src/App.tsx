@@ -9,16 +9,9 @@ import {
 } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, MotionConfig } from "framer-motion";
-import {
-  AuthProvider,
-  useAuth,
-  LoginForm,
-  RegisterForm,
-  ProfileSetupForm,
-  UserProfileCard,
-  ProtectedRoute,
-  OnboardingWizard,
-} from "./features/auth";
+import { AuthProvider } from "./features/auth/AuthContext";
+import { useAuth } from "./features/auth/useAuth";
+import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
 import { AppShell } from "./components/layout";
@@ -29,6 +22,32 @@ import {
   SmoothScrollProvider,
 } from "./components/ui";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+
+const LoginForm = lazy(() =>
+  import("./features/auth/LoginForm").then((m) => ({
+    default: m.LoginForm,
+  })),
+);
+const RegisterForm = lazy(() =>
+  import("./features/auth/RegisterForm").then((m) => ({
+    default: m.RegisterForm,
+  })),
+);
+const OnboardingWizard = lazy(() =>
+  import("./features/auth/OnboardingWizard").then((m) => ({
+    default: m.OnboardingWizard,
+  })),
+);
+const UserProfileCard = lazy(() =>
+  import("./features/auth/UserProfileCard").then((m) => ({
+    default: m.UserProfileCard,
+  })),
+);
+const ProfileSetupForm = lazy(() =>
+  import("./features/auth/ProfileSetupForm").then((m) => ({
+    default: m.ProfileSetupForm,
+  })),
+);
 
 const LandingPage = lazy(() =>
   import("./features/landing/LandingPage").then((m) => ({
@@ -201,7 +220,9 @@ const AnimatedAppRoutes: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <AppShell variant="minimal">
-                      <OnboardingWizard />
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <OnboardingWizard />
+                      </Suspense>
                     </AppShell>
                   </ProtectedRoute>
                 }
@@ -396,11 +417,13 @@ const LoginPage: React.FC = () => {
     (location.state as { from?: string } | null)?.from ?? "/dashboard";
   return (
     <AppShell variant="auth">
-      <PageTransition className="w-full flex justify-center">
-        <LoginForm
-          onSuccess={() => navigate(from, { replace: true })}
-          onSwitchToRegister={() => navigate("/register")}
-        />
+      <PageTransition className="flex w-full justify-center">
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <LoginForm
+            onSuccess={() => navigate(from, { replace: true })}
+            onSwitchToRegister={() => navigate("/register")}
+          />
+        </Suspense>
       </PageTransition>
     </AppShell>
   );
@@ -410,11 +433,13 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   return (
     <AppShell variant="auth">
-      <PageTransition className="w-full flex justify-center">
-        <RegisterForm
-          onSuccess={() => navigate("/onboarding", { replace: true })}
-          onSwitchToLogin={() => navigate("/login")}
-        />
+      <PageTransition className="flex w-full justify-center">
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <RegisterForm
+            onSuccess={() => navigate("/onboarding", { replace: true })}
+            onSwitchToLogin={() => navigate("/login")}
+          />
+        </Suspense>
       </PageTransition>
     </AppShell>
   );

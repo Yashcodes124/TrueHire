@@ -1,11 +1,10 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Award,
   Briefcase,
   Edit3,
-  FileText,
   Mail,
   MapPin,
   User,
@@ -22,8 +21,28 @@ import {
   EmptyState,
   SectionCard,
   Skeleton,
-  SkillBadge,
-} from "../../components/ui";
+} from "../../components/ui/Primitives";
+
+const ProfileSkillsEvidencePanel = lazy(() =>
+  import("./ProfileSkillsEvidencePanel").then((m) => ({
+    default: m.ProfileSkillsEvidencePanel,
+  })),
+);
+
+const SkillsEvidenceFallback: React.FC = () => (
+  <Card padding="md" className="space-y-4" aria-busy="true">
+    <div className="space-y-2">
+      <Skeleton className="h-5 w-48" />
+      <Skeleton className="h-3.5 w-64" />
+    </div>
+    <div className="flex flex-wrap gap-2">
+      {Array.from({ length: 6 }).map((_, idx) => (
+        <Skeleton key={idx} className="h-6 w-20 rounded-full" />
+      ))}
+    </div>
+    <Skeleton className="h-24 w-full" />
+  </Card>
+);
 
 export interface UserProfileCardProps {
   onEdit?: () => void;
@@ -140,7 +159,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ onEdit }) => {
               <p className="text-xs font-medium text-content-secondary">
                 {item.label}
               </p>
-              <p className="text-xl font-semibold text-content-heading truncate tabular-nums">
+              <p className="truncate text-xl font-semibold text-content-heading tabular-nums">
                 {item.value}
               </p>
               <p className="text-xs leading-relaxed text-content-secondary">
@@ -151,7 +170,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ onEdit }) => {
               <button
                 type="button"
                 onClick={item.onClick}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+                className="inline-flex items-center gap-1 rounded-sm text-xs font-semibold text-primary hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <span>{item.actionLabel}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -242,97 +261,16 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ onEdit }) => {
           </SectionCard>
         </div>
 
-        {/* Skills & Resume Snapshot */}
+        {/* Skills & Resume Snapshot (Lazy-loaded) */}
         <div className="lg:col-span-6">
-          <SectionCard
-            title="Skills & Evidence Summary"
-            description="Snapshot of your interview-verified and resume-extracted skills."
-            loading={resumesLoading || readinessLoading}
-            action={
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/skills")}
-              >
-                Full skill ledger
-              </Button>
-            }
-          >
-            <div className="space-y-4">
-              {verifiedSkills.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-content-heading">
-                    Verified in Mock Interviews ({verifiedSkills.length})
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {verifiedSkills.map((item: ReadinessSkill) => (
-                      <SkillBadge
-                        key={item.skill}
-                        skill={item.skill}
-                        level="VERIFIED"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {weakSkills.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-content-heading">
-                    Flagged for Practice ({weakSkills.length})
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {weakSkills.map((item: ReadinessSkill) => (
-                      <SkillBadge
-                        key={item.skill}
-                        skill={item.skill}
-                        level="WEAK"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {latestResume ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-content-heading">
-                      Extracted from Active Resume ({latestResume.skills.length}
-                      )
-                    </p>
-                    <span className="inline-flex items-center gap-1 text-xs text-content-secondary">
-                      <FileText className="h-3 w-3" />
-                      {latestResume.fileName ?? latestResume.title}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {latestResume.skills.slice(0, 12).map((skill: string) => (
-                      <SkillBadge key={skill} skill={skill} level="EXTRACTED" />
-                    ))}
-                    {latestResume.skills.length > 12 && (
-                      <Badge tone="neutral" size="sm">
-                        +{latestResume.skills.length - 12} more
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <EmptyState
-                  title="No active resume"
-                  description="Upload a resume to populate your baseline technical skills."
-                  action={
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => navigate("/resume")}
-                    >
-                      Upload resume
-                    </Button>
-                  }
-                />
-              )}
-            </div>
-          </SectionCard>
+          <Suspense fallback={<SkillsEvidenceFallback />}>
+            <ProfileSkillsEvidencePanel
+              verifiedSkills={verifiedSkills}
+              weakSkills={weakSkills}
+              latestResume={latestResume}
+              loading={resumesLoading || readinessLoading}
+            />
+          </Suspense>
         </div>
       </div>
     </ContentContainer>

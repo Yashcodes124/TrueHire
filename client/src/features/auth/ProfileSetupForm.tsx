@@ -1,18 +1,35 @@
-import React, { useState } from "react";
+import React, { Suspense, lazy, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, MapPin, Plus, X } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useAuth } from "./useAuth";
 import { ContentContainer, PageHeader } from "../../components/layout";
 import {
-  Badge,
   Button,
-  EmptyState,
   ErrorState,
   Input,
   SectionCard,
   Select,
+  Skeleton,
   Toast,
-} from "../../components/ui";
+} from "../../components/ui/Primitives";
+
+const ProfileLocationsSection = lazy(() =>
+  import("./ProfileLocationsSection").then((m) => ({
+    default: m.ProfileLocationsSection,
+  })),
+);
+
+const LocationsFallback: React.FC = () => (
+  <div className="space-y-3 border-t border-border pt-4" aria-busy="true">
+    <Skeleton className="h-4 w-40" />
+    <div className="flex flex-wrap gap-2">
+      {Array.from({ length: 5 }).map((_, idx) => (
+        <Skeleton key={idx} className="h-8 w-24" />
+      ))}
+    </div>
+    <Skeleton className="h-10 w-full" />
+  </div>
+);
 
 export interface ProfileSetupFormProps {
   onComplete?: () => void;
@@ -33,16 +50,6 @@ const EXPERIENCE_LEVELS = [
   { value: "Junior (1-2 years)", label: "Junior (1–2 years)" },
   { value: "Mid-Level (2-5 years)", label: "Mid-Level (2–5 years)" },
   { value: "Senior (5+ years)", label: "Senior (5+ years)" },
-];
-
-const COMMON_LOCATIONS = [
-  "Bengaluru",
-  "Hyderabad",
-  "Pune",
-  "Mumbai",
-  "Delhi NCR",
-  "Chennai",
-  "Remote",
 ];
 
 export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
@@ -243,78 +250,17 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
               onChange={(e) => setExperienceLevel(e.target.value)}
             />
 
-            <div className="space-y-3 border-t border-border pt-4">
-              <p className="text-xs font-medium text-content-heading">
-                Preferred work locations
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {COMMON_LOCATIONS.map((loc) => {
-                  const selected = preferredLocations.includes(loc);
-                  return (
-                    <Button
-                      key={loc}
-                      type="button"
-                      variant={selected ? "primary" : "outline"}
-                      size="sm"
-                      disabled={isSaving}
-                      onClick={() => toggleLocation(loc)}
-                      leftIcon={<MapPin className="h-3.5 w-3.5" />}
-                    >
-                      {loc}
-                    </Button>
-                  );
-                })}
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <Input
-                  label="Add custom city or remote preference"
-                  placeholder="e.g., Gurugram, Hybrid"
-                  value={customLocation}
-                  disabled={isSaving}
-                  onChange={(e) => setCustomLocation(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddLocation();
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={isSaving}
-                  onClick={handleAddLocation}
-                  leftIcon={<Plus className="h-4 w-4" />}
-                >
-                  Add location
-                </Button>
-              </div>
-
-              {preferredLocations.length === 0 ? (
-                <EmptyState
-                  title="No locations selected"
-                  description="Select at least one city or Remote to filter job listings."
-                />
-              ) : (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {preferredLocations.map((loc) => (
-                    <Badge key={loc} tone="primary">
-                      <span>{loc}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLocation(loc)}
-                        aria-label={`Remove ${loc}`}
-                        className="ml-1 rounded-sm p-0.5 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Suspense fallback={<LocationsFallback />}>
+              <ProfileLocationsSection
+                preferredLocations={preferredLocations}
+                customLocation={customLocation}
+                disabled={isSaving}
+                onToggleLocation={toggleLocation}
+                onCustomLocationChange={setCustomLocation}
+                onAddLocation={handleAddLocation}
+                onRemoveLocation={handleRemoveLocation}
+              />
+            </Suspense>
           </div>
         </SectionCard>
       </form>
